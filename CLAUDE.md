@@ -10,11 +10,11 @@ FincoAI is an AI-assisted bookkeeping app: the user describes financial events i
 - `frontend_finco_ai/` — React 19 + TypeScript + Vite 8 frontend, with the React Compiler on (Babel preset in `vite.config.ts`). It uses MUI v9 and React Router v8.
 - `docs/` — one plan file per completed build step (`NN-short-name.md`). The project is built one step at a time: when you finish a step, save its plan there and update this file if the architecture changed.
 
-There is no git repo, no `requirements.txt`, and no API layer between the two yet. The virtualenv is `.venv/` at the repo root and only contains Django.
+There is no API layer between the two yet. The virtualenv is `.venv/` at the repo root. Backend dependencies are pinned in `finco_ai/requirements.txt`.
 
 ## Commands
 
-Backend (run from `finco_ai/`, using the root venv):
+Backend (run from `finco_ai/`, using the root venv). First-time setup: `..\.venv\Scripts\python.exe -m pip install -r requirements.txt`, then copy `.env.example` to `.env` and set `SECRET_KEY`.
 
 ```powershell
 ..\.venv\Scripts\python.exe manage.py runserver
@@ -49,6 +49,13 @@ MUI v9 / theming gotchas:
 - Lint rules: component files may only export components (react-refresh), and `verbatimModuleSyntax` requires `import type` for type-only imports.
 
 ## Backend architecture
+
+Settings are split up in `finco_ai/finco_ai/settings/`:
+- `base.py` holds the shared settings. It reads values with `django-environ` from real environment variables first, then from `finco_ai/.env` (gitignored; the template is `.env.example`).
+- `SECRET_KEY` is required in every environment. `DATABASE_URL` is optional and defaults to SQLite.
+- `dev.py` is the default for `manage.py`. `prod.py` is the default for `wsgi.py` and `asgi.py`; it forces `DEBUG=False`, requires `ALLOWED_HOSTS` and enables the HTTPS/HSTS security settings.
+- Switch environments with `DJANGO_SETTINGS_MODULE=finco_ai.settings.prod`. Check production settings with `manage.py check --deploy`.
+- Never hardcode secrets: add new ones to `.env.example` and read them with `env(...)`.
 
 Each domain is its own Django app: `financial_accounts`, `transactions`, `ai_chat`, `dashboard`. **These apps are not in `INSTALLED_APPS` yet and have no migrations**, so add them to `settings.py` before running `makemigrations`. Views, URLs and tests are still empty stubs. Only `admin/` is routed.
 
