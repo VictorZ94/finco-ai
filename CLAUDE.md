@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 FincoAI is an AI-assisted bookkeeping app: the user describes financial events in chat, and the app turns them into double-entry accounting records against a hierarchical chart of accounts (the account levels Clase/Grupo/Cuenta/Subcuenta and codes like `1105`/`110505` follow the Colombian PUC style). The repo holds two independent projects:
 
-- `finco_ai/` — Django 6.1 backend (Python 3.12, SQLite). The outer folder holds `manage.py`; the inner `finco_ai/finco_ai/` is the settings package.
+- `finco_ai/` — Django 6.1 backend (Python 3.12, PostgreSQL via Docker). The outer folder holds `manage.py`; the inner `finco_ai/finco_ai/` is the settings package.
 - `frontend_finco_ai/` — React 19 + TypeScript + Vite 8 frontend, with the React Compiler on (Babel preset in `vite.config.ts`). It uses MUI v9 and React Router v8.
 - `docs/` — one plan file per completed build step (`NN-short-name.md`). The project is built one step at a time: when you finish a step, save its plan there and update this file if the architecture changed.
 
@@ -14,7 +14,7 @@ There is no API layer between the two yet. The virtualenv is `.venv/` at the rep
 
 ## Commands
 
-Backend (run from `finco_ai/`, using the root venv). First-time setup: `..\.venv\Scripts\python.exe -m pip install -r requirements.txt`, then copy `.env.example` to `.env` and set `SECRET_KEY`.
+Backend (run from `finco_ai/`, using the root venv). First-time setup: `..\.venv\Scripts\python.exe -m pip install -r requirements.txt`, then copy `.env.example` to `.env` and set `SECRET_KEY`. The database is PostgreSQL. Start it with `docker compose up -d` from `finco_ai/` (`docker-compose.yaml`). The container and Django both read the `POSTGRES_*` values from the same `.env`. Use `POSTGRES_HOST=127.0.0.1`: `localhost` hangs on Windows/Docker because it tries IPv6 first. Seed the chart of accounts with `manage.py loaddata financial_accounts`.
 
 ```powershell
 ..\.venv\Scripts\python.exe manage.py runserver
@@ -52,7 +52,7 @@ MUI v9 / theming gotchas:
 
 Settings are split up in `finco_ai/finco_ai/settings/`:
 - `base.py` holds the shared settings. It reads values with `django-environ` from real environment variables first, then from `finco_ai/.env` (gitignored; the template is `.env.example`).
-- `SECRET_KEY` is required in every environment. `DATABASE_URL` is optional and defaults to SQLite.
+- `SECRET_KEY` and the `POSTGRES_*` connection values (`DB`, `USER`, `PASSWORD`, `HOST`, `PORT`) are required in every environment.
 - `dev.py` is the default for `manage.py`. `prod.py` is the default for `wsgi.py` and `asgi.py`; it forces `DEBUG=False`, requires `ALLOWED_HOSTS` and enables the HTTPS/HSTS security settings.
 - Switch environments with `DJANGO_SETTINGS_MODULE=finco_ai.settings.prod`. Check production settings with `manage.py check --deploy`.
 - Never hardcode secrets: add new ones to `.env.example` and read them with `env(...)`.

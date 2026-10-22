@@ -38,6 +38,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Local apps
+    'financial_accounts',
+    'transactions',
+    'ai_chat',
+    'dashboard',
 ]
 
 MIDDLEWARE = [
@@ -72,10 +77,17 @@ WSGI_APPLICATION = 'finco_ai.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
-# DATABASE_URL, e.g. postgres://user:pass@host:5432/finco_ai; defaults to local SQLite.
+# PostgreSQL (docker-compose.yaml); connection values come from the POSTGRES_* env vars.
 
 DATABASES = {
-    'default': env.db('DATABASE_URL', default=f'sqlite:///{BASE_DIR / "db.sqlite3"}'),
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('POSTGRES_DB'),
+        'USER': env('POSTGRES_USER'),
+        'PASSWORD': env('POSTGRES_PASSWORD'),
+        'HOST': env('POSTGRES_HOST'),
+        'PORT': env('POSTGRES_PORT'),
+    }
 }
 
 

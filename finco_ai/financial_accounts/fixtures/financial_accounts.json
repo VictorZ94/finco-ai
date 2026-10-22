@@ -1,0 +1,690 @@
+[
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000000001",
+    "fields": {
+      "code": "1",
+      "name": "Activo",
+      "nature": "DEBIT",
+      "level": 1,
+      "parent": null,
+      "account_type": "ASSET",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000000011",
+    "fields": {
+      "code": "11",
+      "name": "Disponible",
+      "nature": "DEBIT",
+      "level": 2,
+      "parent": "f1000000-0000-4000-8000-000000000001",
+      "account_type": "ASSET",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000001105",
+    "fields": {
+      "code": "1105",
+      "name": "Caja",
+      "nature": "DEBIT",
+      "level": 3,
+      "parent": "f1000000-0000-4000-8000-000000000011",
+      "account_type": "ASSET",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000110505",
+    "fields": {
+      "code": "1105-05",
+      "name": "Efectivo en Bolsillo",
+      "nature": "DEBIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000001105",
+      "account_type": "ASSET",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000001110",
+    "fields": {
+      "code": "1110",
+      "name": "Bancos",
+      "nature": "DEBIT",
+      "level": 3,
+      "parent": "f1000000-0000-4000-8000-000000000011",
+      "account_type": "ASSET",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000111010",
+    "fields": {
+      "code": "1110-10",
+      "name": "Cta de Ahorros Bancolombia",
+      "nature": "DEBIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000001110",
+      "account_type": "ASSET",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000111015",
+    "fields": {
+      "code": "1110-15",
+      "name": "Cta de Ahorros Nubank",
+      "nature": "DEBIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000001110",
+      "account_type": "ASSET",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000000012",
+    "fields": {
+      "code": "12",
+      "name": "Inversiones",
+      "nature": "DEBIT",
+      "level": 2,
+      "parent": "f1000000-0000-4000-8000-000000000001",
+      "account_type": "ASSET",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000001225",
+    "fields": {
+      "code": "1225",
+      "name": "Certificados",
+      "nature": "DEBIT",
+      "level": 3,
+      "parent": "f1000000-0000-4000-8000-000000000012",
+      "account_type": "ASSET",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000122505",
+    "fields": {
+      "code": "1225-05",
+      "name": "CDT Bancolombia",
+      "nature": "DEBIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000001225",
+      "account_type": "ASSET",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000122510",
+    "fields": {
+      "code": "1225-10",
+      "name": "CDT Bancolombia",
+      "nature": "DEBIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000001225",
+      "account_type": "ASSET",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000000002",
+    "fields": {
+      "code": "2",
+      "name": "Pasivo",
+      "nature": "CREDIT",
+      "level": 1,
+      "parent": null,
+      "account_type": "LIABILITY",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000000021",
+    "fields": {
+      "code": "21",
+      "name": "Obligaciones financieras",
+      "nature": "CREDIT",
+      "level": 2,
+      "parent": "f1000000-0000-4000-8000-000000000002",
+      "account_type": "LIABILITY",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000002105",
+    "fields": {
+      "code": "2105",
+      "name": "Bancos nacionales",
+      "nature": "CREDIT",
+      "level": 3,
+      "parent": "f1000000-0000-4000-8000-000000000021",
+      "account_type": "LIABILITY",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000210501",
+    "fields": {
+      "code": "2105-01",
+      "name": "Prestamo Bancolombia",
+      "nature": "CREDIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000002105",
+      "account_type": "LIABILITY",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000210502",
+    "fields": {
+      "code": "2105-02",
+      "name": "Tarjeta de Crédito Nubank",
+      "nature": "CREDIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000002105",
+      "account_type": "LIABILITY",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000210503",
+    "fields": {
+      "code": "2105-03",
+      "name": "Tarjeta de Credito Bco de Occidente",
+      "nature": "CREDIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000002105",
+      "account_type": "LIABILITY",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000000023",
+    "fields": {
+      "code": "23",
+      "name": "Cuentas por pagar",
+      "nature": "CREDIT",
+      "level": 2,
+      "parent": "f1000000-0000-4000-8000-000000000002",
+      "account_type": "LIABILITY",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000002305",
+    "fields": {
+      "code": "2305",
+      "name": "Cuentas corrientes comerciales",
+      "nature": "CREDIT",
+      "level": 3,
+      "parent": "f1000000-0000-4000-8000-000000000023",
+      "account_type": "LIABILITY",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000230501",
+    "fields": {
+      "code": "2305-01",
+      "name": "Cuenta por Pagar",
+      "nature": "CREDIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000002305",
+      "account_type": "LIABILITY",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000000003",
+    "fields": {
+      "code": "3",
+      "name": "Patrimonio",
+      "nature": "CREDIT",
+      "level": 1,
+      "parent": null,
+      "account_type": "EQUITY",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000000031",
+    "fields": {
+      "code": "31",
+      "name": "Capital social",
+      "nature": "CREDIT",
+      "level": 2,
+      "parent": "f1000000-0000-4000-8000-000000000003",
+      "account_type": "EQUITY",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000003105",
+    "fields": {
+      "code": "3105",
+      "name": "Capital suscrito y pagado",
+      "nature": "CREDIT",
+      "level": 3,
+      "parent": "f1000000-0000-4000-8000-000000000031",
+      "account_type": "EQUITY",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000310505",
+    "fields": {
+      "code": "3105-05",
+      "name": "Capital Autorizado",
+      "nature": "CREDIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000003105",
+      "account_type": "EQUITY",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000000004",
+    "fields": {
+      "code": "4",
+      "name": "Ingresos",
+      "nature": "CREDIT",
+      "level": 1,
+      "parent": null,
+      "account_type": "INCOME",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000000041",
+    "fields": {
+      "code": "41",
+      "name": "Operacionales",
+      "nature": "CREDIT",
+      "level": 2,
+      "parent": "f1000000-0000-4000-8000-000000000004",
+      "account_type": "INCOME",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000004135",
+    "fields": {
+      "code": "4135",
+      "name": "Comercio al por mayor y al por menor",
+      "nature": "CREDIT",
+      "level": 3,
+      "parent": "f1000000-0000-4000-8000-000000000041",
+      "account_type": "INCOME",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000413505",
+    "fields": {
+      "code": "4135-05",
+      "name": "Ingresos",
+      "nature": "CREDIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000004135",
+      "account_type": "INCOME",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000000005",
+    "fields": {
+      "code": "5",
+      "name": "Gastos",
+      "nature": "DEBIT",
+      "level": 1,
+      "parent": null,
+      "account_type": "EXPENSE",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000000051",
+    "fields": {
+      "code": "51",
+      "name": "Operacionales de administración",
+      "nature": "DEBIT",
+      "level": 2,
+      "parent": "f1000000-0000-4000-8000-000000000005",
+      "account_type": "EXPENSE",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000005105",
+    "fields": {
+      "code": "5105",
+      "name": "Gastos de personal",
+      "nature": "DEBIT",
+      "level": 3,
+      "parent": "f1000000-0000-4000-8000-000000000051",
+      "account_type": "EXPENSE",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000510501",
+    "fields": {
+      "code": "5105-01",
+      "name": "Sueldos",
+      "nature": "DEBIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000005105",
+      "account_type": "EXPENSE",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000005125",
+    "fields": {
+      "code": "5125",
+      "name": "Contribuciones y afiliaciones",
+      "nature": "DEBIT",
+      "level": 3,
+      "parent": "f1000000-0000-4000-8000-000000000051",
+      "account_type": "EXPENSE",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000512501",
+    "fields": {
+      "code": "5125-01",
+      "name": "Alimentación",
+      "nature": "DEBIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000005125",
+      "account_type": "EXPENSE",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000005135",
+    "fields": {
+      "code": "5135",
+      "name": "Servicios",
+      "nature": "DEBIT",
+      "level": 3,
+      "parent": "f1000000-0000-4000-8000-000000000051",
+      "account_type": "EXPENSE",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000513501",
+    "fields": {
+      "code": "5135-01",
+      "name": "Servicios Públicos",
+      "nature": "DEBIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000005135",
+      "account_type": "EXPENSE",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000513502",
+    "fields": {
+      "code": "5135-02",
+      "name": "Plan de datos Celular",
+      "nature": "DEBIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000005135",
+      "account_type": "EXPENSE",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000513503",
+    "fields": {
+      "code": "5135-03",
+      "name": "Gasolina",
+      "nature": "DEBIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000005135",
+      "account_type": "EXPENSE",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000005140",
+    "fields": {
+      "code": "5140",
+      "name": "Gastos legales",
+      "nature": "DEBIT",
+      "level": 3,
+      "parent": "f1000000-0000-4000-8000-000000000051",
+      "account_type": "EXPENSE",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000514001",
+    "fields": {
+      "code": "5140-01",
+      "name": "Consulares",
+      "nature": "DEBIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000005140",
+      "account_type": "EXPENSE",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000005155",
+    "fields": {
+      "code": "5155",
+      "name": "Gastos de viaje",
+      "nature": "DEBIT",
+      "level": 3,
+      "parent": "f1000000-0000-4000-8000-000000000051",
+      "account_type": "EXPENSE",
+      "can_receive_movement": false,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000515501",
+    "fields": {
+      "code": "5155-01",
+      "name": "Alojamiento",
+      "nature": "DEBIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000005155",
+      "account_type": "EXPENSE",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "financial_accounts.financialaccount",
+    "pk": "f1000000-0000-4000-8000-000000515502",
+    "fields": {
+      "code": "5155-02",
+      "name": "Tiquetes Aéreos",
+      "nature": "DEBIT",
+      "level": 4,
+      "parent": "f1000000-0000-4000-8000-000000005155",
+      "account_type": "EXPENSE",
+      "can_receive_movement": true,
+      "user_id": "demo-user",
+      "created_at": "2026-10-22T00:00:00Z",
+      "updated_at": "2026-10-22T00:00:00Z"
+    }
+  }
+]

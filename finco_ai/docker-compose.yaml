@@ -1,0 +1,25 @@
+# Local PostgreSQL for development.
+# Values come from .env in this folder (shared with Django); see .env.example.
+#   docker compose up -d      start
+#   docker compose down       stop (data is kept in the volume)
+#   docker compose down -v    stop and DELETE all data
+
+services:
+  pgdb:
+    image: postgres
+    container_name: finco_ai_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-localhost}
+      POSTGRES_DB: ${POSTGRES_DB:-finco_ai}
+      POSTGRES_USER: ${POSTGRES_USER:-finco_ai}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      # Bound to localhost only, so the database isn't exposed on the network.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Postgres 18+ keeps data under /var/lib/postgresql (not .../data).
+      - postgres_data:/var/lib/postgresql
+
+volumes:
+  postgres_data:
