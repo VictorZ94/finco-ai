@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Third-party
+    'rest_framework',
     # Local apps
     'financial_accounts',
     'transactions',
@@ -127,3 +129,20 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+
+# REST API
+# https://www.django-rest-framework.org/api-guide/settings/
+# No authentication yet: every request acts as DEFAULT_USER_ID (see finco_ai/identity.py)
+# until Firebase ID-token verification is added.
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [],
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.AllowAny'],
+    'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer'],
+    'DEFAULT_PARSER_CLASSES': ['rest_framework.parsers.JSONParser'],
+    # Money travels as strings ("50000.00"), never floats.
+    'COERCE_DECIMAL_TO_STRING': True,
+}
+
+DEFAULT_USER_ID = env('DEFAULT_USER_ID', default='demo-user')

@@ -8,4 +8,10 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] })
   ],
+  server: {
+    // Django runserver; the app calls relative /api/... so no CORS is needed in dev.
+    proxy: {
+      '/api': 'http://127.0.0.1:8000',
+    },
+  },
 })
