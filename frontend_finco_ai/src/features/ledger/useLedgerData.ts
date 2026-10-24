@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { ApiError, createTransaction, fetchPostableAccounts, fetchTransactions } from './ledgerService.ts'
+import { ApiError } from '../../lib/apiClient.ts'
+import { createTransaction, fetchPostableAccounts, fetchTransactions } from './ledgerService.ts'
 import type { Account, NewTransaction, Transaction } from './types.ts'
 
 function toMessages(error: unknown): string[] {
