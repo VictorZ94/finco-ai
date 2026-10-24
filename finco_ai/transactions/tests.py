@@ -1,13 +1,14 @@
 from decimal import Decimal
 
 from django.db import IntegrityError, transaction
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from financial_accounts.models import AccountType, FinancialAccount, Nature
+from users.testing import FirebaseAuthMixin
 
 from .models import LedgerEntry, Transaction
 
@@ -26,11 +27,12 @@ def make_account(code, nature=Nature.DEBIT, postable=True, user_id=USER):
     )
 
 
-@override_settings(DEFAULT_USER_ID=USER)
-class TransactionApiTests(APITestCase):
+class TransactionApiTests(FirebaseAuthMixin, APITestCase):
     url = reverse("transaction-list")
 
     def setUp(self):
+        super().setUp()
+        self.authenticate(USER)
         self.expense = make_account("5125-01")
         self.card = make_account("2105-02", nature=Nature.CREDIT)
         self.group = make_account("5125", postable=False)
@@ -170,9 +172,9 @@ class LedgerEntryConstraintTests(TestCase):
         self.assert_db_rejects(Decimal("-10"), Decimal("0"))
 
 
-@override_settings(DEFAULT_USER_ID=USER)
-class AccountApiTests(APITestCase):
+class AccountApiTests(FirebaseAuthMixin, APITestCase):
     def test_postable_filter_returns_only_leaf_accounts(self):
+        self.authenticate(USER)
         make_account("5125", postable=False)
         make_account("5125-01")
         make_account("5125-02", user_id="someone-else")

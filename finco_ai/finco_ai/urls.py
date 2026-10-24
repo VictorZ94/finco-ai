@@ -17,8 +17,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+from users.admin_views import admin_login
+
 urlpatterns = [
+    # Firebase sign-in replaces the admin's password login (must come before admin.site.urls).
+    path('admin/login/', admin_login, name='admin_firebase_login'),
     path('admin/', admin.site.urls),
+    path('api/', include('users.urls')),
     path('api/', include('financial_accounts.urls')),
     path('api/', include('transactions.urls')),
 ]

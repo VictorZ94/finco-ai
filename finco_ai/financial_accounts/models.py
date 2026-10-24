@@ -21,7 +21,7 @@ class FinancialAccount(models.Model):
         SUBCUENTA = 4, "Subcuenta"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    code = models.CharField(max_length=20, unique=True) # e.g. "1", "11", "1105", "110505"
+    code = models.CharField(max_length=20)  # e.g. "1", "11", "1105", "1105-05"; unique per user (see Meta)
     name = models.CharField(max_length=255)
     nature = models.CharField(max_length=20, choices=Nature.choices)
     level = models.PositiveSmallIntegerField(choices=Level.choices)
