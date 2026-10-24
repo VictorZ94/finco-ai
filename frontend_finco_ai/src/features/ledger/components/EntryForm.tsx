@@ -4,7 +4,6 @@ import Autocomplete from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
-import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
 import Paper from '@mui/material/Paper'
@@ -22,15 +21,18 @@ import Typography from '@mui/material/Typography'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { useTheme } from '@mui/material/styles'
 import AddIcon from '@mui/icons-material/Add'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import CheckIcon from '@mui/icons-material/Check'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined'
 import SaveIcon from '@mui/icons-material/Save'
-import { formatDateTime } from '../dates.ts'
-import { formatCents, isValidAmount } from '../money.ts'
+import { formatDateTime } from '../../../lib/dates.ts'
+import { formatCents, isValidAmount } from '../../../lib/money.ts'
 import type { Account, LedgerLine } from '../types.ts'
 import type { LedgerForm } from '../useLedgerForm.ts'
 import { useNow } from '../useNow.ts'
+import { cardSx } from '../../../theme/index.ts'
+import { danger } from '../../../theme/tokens.ts'
+import { useBrand } from '../../../theme/useBrand.ts'
 
 interface EntryFormProps {
   form: LedgerForm
@@ -63,10 +65,16 @@ function AmountField({ ariaLabel, label, value, disabled, onChange }: AmountFiel
       placeholder="0"
       size="small"
       fullWidth
+      // Let amount inputs shrink inside the phone layout's two-column row.
+      sx={{ minWidth: 0 }}
       error={!isValidAmount(value)}
       slotProps={{
         input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
-        htmlInput: { inputMode: 'decimal', 'aria-label': ariaLabel, style: { textAlign: 'right' } },
+        htmlInput: {
+          inputMode: 'decimal',
+          'aria-label': ariaLabel,
+          style: { textAlign: 'right', fontVariantNumeric: 'tabular-nums' },
+        },
       }}
     />
   )
@@ -87,6 +95,17 @@ function AccountField({ line, accounts, form }: Omit<LineProps, 'index'>) {
       onChange={(_, account) => form.updateLine(line.key, { account })}
       getOptionLabel={accountLabel}
       isOptionEqualToValue={(option, value) => option.id === value.id}
+      renderOption={(props, option) => {
+        const { key, ...optionProps } = props
+        return (
+          <li key={key} {...optionProps}>
+            <Box component="span" sx={{ color: 'text.secondary', mr: 1.25, minWidth: '7ch', fontVariantNumeric: 'tabular-nums' }}>
+              {option.code}
+            </Box>
+            {option.name}
+          </li>
+        )
+      }}
       size="small"
       fullWidth
       renderInput={(params) => <TextField {...params} placeholder="Choose an account" />}
@@ -135,6 +154,14 @@ function amountFields(line: LedgerLine, index: number, form: LedgerForm, withLab
   }
 }
 
+function TotalAmount({ cents, testId }: { cents: number; testId: string }) {
+  return (
+    <Typography component="span" variant="money" data-testid={testId} sx={{ fontSize: '1.0625rem', fontWeight: 600 }}>
+      {formatCents(cents)}
+    </Typography>
+  )
+}
+
 function LinesTable({ form, accounts }: { form: LedgerForm; accounts: Account[] }) {
   return (
     <TableContainer sx={{ mb: 2 }}>
@@ -170,19 +197,25 @@ function LinesTable({ form, accounts }: { form: LedgerForm; accounts: Account[] 
         </TableBody>
         <TableFooter>
           <TableRow>
-            <TableCell colSpan={4}>
+            <TableCell colSpan={4} sx={{ borderBottom: 'none', py: 1.5 }}>
               <Button startIcon={<AddIcon />} onClick={form.addLine} size="small">
                 Add line
               </Button>
             </TableCell>
           </TableRow>
-          <TableRow sx={{ '& td': { fontWeight: 700, fontSize: '0.95rem', color: 'text.primary' } }}>
-            <TableCell>Total</TableCell>
-            <TableCell align="right" data-testid="total-debit">
-              {formatCents(form.totalDebit)}
+          <TableRow
+            sx={{ '& td': { borderBottom: 'none', borderTop: '1px solid', borderTopColor: 'brand.950', color: 'text.primary', py: 2 } }}
+          >
+            <TableCell>
+              <Typography variant="h6" component="span">
+                Total
+              </Typography>
             </TableCell>
-            <TableCell align="right" data-testid="total-credit">
-              {formatCents(form.totalCredit)}
+            <TableCell align="right">
+              <TotalAmount cents={form.totalDebit} testId="total-debit" />
+            </TableCell>
+            <TableCell align="right">
+              <TotalAmount cents={form.totalCredit} testId="total-credit" />
             </TableCell>
             <TableCell />
           </TableRow>
@@ -199,7 +232,7 @@ function LinesStacked({ form, accounts }: { form: LedgerForm; accounts: Account[
       {form.lines.map((line, index) => {
         const amounts = amountFields(line, index, form, true)
         return (
-          <Paper key={line.key} variant="outlined" sx={{ p: 1.5 }}>
+          <Paper key={line.key} variant="outlined" sx={{ p: 1.5, bgcolor: 'brand.50', borderRadius: '16px' }}>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1.5 }}>
               <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
                 Line {index + 1}
@@ -221,20 +254,23 @@ function LinesStacked({ form, accounts }: { form: LedgerForm; accounts: Account[
           Add line
         </Button>
       </Box>
-      <Divider />
       <Box
         sx={{
           display: 'grid',
           gridTemplateColumns: 'auto 1fr',
           columnGap: 2,
-          rowGap: 0.5,
-          '& > :nth-of-type(even)': { textAlign: 'right', fontWeight: 700 },
+          rowGap: 1,
+          alignItems: 'baseline',
+          borderTop: '1px solid',
+          borderTopColor: 'brand.950',
+          pt: 1.5,
+          '& > :nth-child(even)': { justifySelf: 'end' },
         }}
       >
-        <Typography>Total debit</Typography>
-        <Typography data-testid="total-debit">{formatCents(form.totalDebit)}</Typography>
-        <Typography>Total credit</Typography>
-        <Typography data-testid="total-credit">{formatCents(form.totalCredit)}</Typography>
+        <Typography color="text.secondary">Total debit</Typography>
+        <TotalAmount cents={form.totalDebit} testId="total-debit" />
+        <Typography color="text.secondary">Total credit</Typography>
+        <TotalAmount cents={form.totalCredit} testId="total-credit" />
       </Box>
     </Stack>
   )
@@ -242,7 +278,7 @@ function LinesStacked({ form, accounts }: { form: LedgerForm; accounts: Account[
 
 function BalanceChip({ form }: { form: LedgerForm }) {
   if (form.isBalanced) {
-    return <Chip icon={<CheckCircleIcon />} label="Balanced" color="success" variant="outlined" />
+    return <Chip icon={<CheckIcon />} label="Balanced" sx={{ '& .MuiChip-icon': { color: 'brand.900' } }} />
   }
   if (form.totalDebit + form.totalCredit === 0) {
     return <Chip label="No amounts yet" variant="outlined" />
@@ -250,9 +286,15 @@ function BalanceChip({ form }: { form: LedgerForm }) {
   return (
     <Chip
       icon={<ErrorOutlineIcon />}
-      label={`Difference: ${formatCents(Math.abs(form.difference))}`}
-      color="error"
-      variant="outlined"
+      label={
+        <>
+          Difference{' '}
+          <Box component="span" sx={{ fontVariantNumeric: 'tabular-nums' }}>
+            {formatCents(Math.abs(form.difference))}
+          </Box>
+        </>
+      }
+      sx={{ bgcolor: danger.surface, color: danger.main, '& .MuiChip-icon': { color: danger.main } }}
     />
   )
 }
@@ -266,6 +308,7 @@ export default function EntryForm({
   onSubmit,
 }: EntryFormProps) {
   const now = useNow()
+  const brand = useBrand()
   const theme = useTheme()
   const isCompact = useMediaQuery(theme.breakpoints.down('sm'))
 
@@ -275,8 +318,8 @@ export default function EntryForm({
   }
 
   return (
-    <Paper component="form" onSubmit={handleSubmit} variant="outlined" sx={{ p: { xs: 2, sm: 3 } }}>
-      <Typography variant="h6" component="h2" sx={{ mb: 2 }}>
+    <Box component="form" onSubmit={handleSubmit} sx={{ ...cardSx(brand), p: { xs: 2.5, sm: 4 } }}>
+      <Typography variant="h3" component="h2" sx={{ mb: 3 }}>
         New entry
       </Typography>
 
@@ -366,6 +409,6 @@ export default function EntryForm({
           ))}
         </Alert>
       )}
-    </Paper>
+    </Box>
   )
 }

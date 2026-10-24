@@ -1,0 +1,84 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static "admin/css/login.css" %}">
+<style>
+  .firebase-login { display: grid; gap: 12px; }
+  .firebase-login .divider { text-align: center; color: var(--body-quiet-color); }
+  .firebase-login input[type=email], .firebase-login input[type=password] { width: 100%; box-sizing: border-box; }
+  .firebase-login button { width: 100%; padding: 10px; cursor: pointer; }
+  .firebase-login .status { min-height: 1.2em; color: var(--body-quiet-color); }
+</style>
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} login{% endblock %}
+{% block usertools %}{% endblock %}
+{% block nav-global %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  {% if error %}<p class="errornote">{{ error }}</p>{% endif %}
+  <p>Sign in with your Firebase account. Only listed administrators can enter.</p>
+
+  <form id="token-form" method="post" action="{{ request.path }}">
+    {% csrf_token %}
+    <input type="hidden" name="id_token" id="id_token">
+    <input type="hidden" name="next" value="{{ next }}">
+  </form>
+
+  <div class="firebase-login">
+    <button type="button" id="google-btn">Continue with Google</button>
+    <div class="divider">or</div>
+    <form id="email-form" class="firebase-login">
+      <label for="email">Email</label>
+      <input type="email" id="email" autocomplete="username" required>
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password" required>
+      <button type="submit">Sign in with email</button>
+    </form>
+    <p class="status" id="status" role="status"></p>
+  </div>
+</div>
+
+{{ firebase_config|json_script:"firebase-config" }}
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+  import {
+    getAuth, setPersistence, inMemoryPersistence, signInWithPopup, GoogleAuthProvider,
+    signInWithEmailAndPassword,
+  } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+
+  const config = JSON.parse(document.getElementById("firebase-config").textContent);
+  const auth = getAuth(initializeApp(config));
+  const status = document.getElementById("status");
+
+  async function submitToken(credential) {
+    status.textContent = "Verifying…";
+    document.getElementById("id_token").value = await credential.user.getIdToken(true);
+    document.getElementById("token-form").submit();
+  }
+
+  async function run(signIn) {
+    try {
+      // Django keeps the admin session; Firebase doesn't need to remember this browser.
+      await setPersistence(auth, inMemoryPersistence);
+      await submitToken(await signIn());
+    } catch (error) {
+      status.textContent = error.code === "auth/invalid-credential"
+        ? "Wrong email or password."
+        : `Sign-in failed (${error.code || error.message}).`;
+    }
+  }
+
+  document.getElementById("google-btn").addEventListener("click", () =>
+    run(() => signInWithPopup(auth, new GoogleAuthProvider())));
+  document.getElementById("email-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    run(() => signInWithEmailAndPassword(
+      auth, document.getElementById("email").value, document.getElementById("password").value));
+  });
+</script>
+{% endblock %}

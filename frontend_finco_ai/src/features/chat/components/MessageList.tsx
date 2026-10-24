@@ -25,7 +25,7 @@ export default function MessageList({ messages, isSending, onPickExample }: Mess
 
   return (
     <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: { xs: 0, sm: 1 } }}>
-      <Stack spacing={2} sx={{ py: 1 }}>
+      <Stack spacing={3} sx={{ py: 1 }}>
         {messages.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}

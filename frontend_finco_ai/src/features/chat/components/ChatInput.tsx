@@ -4,6 +4,7 @@ import IconButton from '@mui/material/IconButton'
 import Paper from '@mui/material/Paper'
 import TextField from '@mui/material/TextField'
 import SendIcon from '@mui/icons-material/Send'
+import { radius } from '../../../theme/tokens.ts'
 
 interface ChatInputProps {
   disabled: boolean
@@ -44,7 +45,18 @@ export default function ChatInput({ disabled, onSend }: ChatInputProps) {
       component="form"
       onSubmit={handleSubmit}
       variant="outlined"
-      sx={{ display: 'flex', alignItems: 'flex-end', gap: 1, p: 1, pl: 2 }}
+      sx={{
+        display: 'flex',
+        alignItems: 'flex-end',
+        gap: 1,
+        p: 1,
+        pl: 2,
+        bgcolor: '#FFFFFF',
+        borderColor: 'brand.200',
+        borderRadius: radius.card,
+        transition: 'border-color 150ms',
+        '&:focus-within': { borderColor: 'brand.600' },
+      }}
     >
       <TextField
         inputRef={inputRef}
@@ -63,8 +75,19 @@ export default function ChatInput({ disabled, onSend }: ChatInputProps) {
         }}
         sx={{ py: 0.75 }}
       />
-      <IconButton type="submit" color="primary" disabled={!canSend} aria-label="Send message">
-        <SendIcon />
+      <IconButton
+        type="submit"
+        disabled={!canSend}
+        aria-label="Send message"
+        sx={{
+          borderRadius: '50%',
+          bgcolor: 'brand.600',
+          color: '#FFFFFF',
+          '&:hover': { bgcolor: 'brand.700' },
+          '&.Mui-disabled': { bgcolor: 'brand.100', color: 'brand.400' },
+        }}
+      >
+        <SendIcon fontSize="small" />
       </IconButton>
     </Paper>
   )

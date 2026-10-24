@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'transactions',
     'ai_chat',
     'dashboard',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -133,16 +134,39 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # REST API
 # https://www.django-rest-framework.org/api-guide/settings/
-# No authentication yet: every request acts as DEFAULT_USER_ID (see finco_ai/identity.py)
-# until Firebase ID-token verification is added.
+# Every request must carry a Firebase ID token (Authorization: Bearer <token>);
+# see users/authentication.py. Views scope data with finco_ai.identity.get_user_id.
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [],
-    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.AllowAny'],
+    'DEFAULT_AUTHENTICATION_CLASSES': ['users.authentication.FirebaseAuthentication'],
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
     'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer'],
     'DEFAULT_PARSER_CLASSES': ['rest_framework.parsers.JSONParser'],
     # Money travels as strings ("50000.00"), never floats.
     'COERCE_DECIMAL_TO_STRING': True,
 }
 
-DEFAULT_USER_ID = env('DEFAULT_USER_ID', default='demo-user')
+
+# Firebase Authentication
+# Firebase is the only identity provider: app users never get a Django password.
+# Service account (backend token verification). Empty values only fail when a
+# token is actually verified, so tests (which mock Firebase) run without them.
+
+FIREBASE_PROJECT_ID = env('FIREBASE_PROJECT_ID', default='')
+FIREBASE_CLIENT_EMAIL = env('FIREBASE_CLIENT_EMAIL', default='')
+FIREBASE_PRIVATE_KEY = env('FIREBASE_PRIVATE_KEY', default='')
+
+# Public web config, used by the Firebase sign-in page of Django admin.
+FIREBASE_WEB_API_KEY = env('FIREBASE_WEB_API_KEY', default='')
+FIREBASE_AUTH_DOMAIN = env('FIREBASE_AUTH_DOMAIN', default='')
+FIREBASE_APP_ID = env('FIREBASE_APP_ID', default='')
+
+# Firebase UIDs allowed into Django admin (comma-separated).
+FIREBASE_ADMIN_UIDS = env.list('FIREBASE_ADMIN_UIDS', default=[])
+
+# Django auth only serves admin staff, and only via Firebase: no password login.
+AUTHENTICATION_BACKENDS = ['users.backends.FirebaseAdminBackend']
+LOGIN_URL = 'admin:login'
+
+# Admin sessions expire after 8 hours.
+SESSION_COOKIE_AGE = 8 * 60 * 60

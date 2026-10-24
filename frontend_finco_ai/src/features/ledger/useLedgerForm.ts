@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { todayIso } from './dates.ts'
-import { centsToApi, isValidAmount, toCents } from './money.ts'
+import { todayIso } from '../../lib/dates.ts'
+import { centsToApi, isValidAmount, toCents } from '../../lib/money.ts'
 import type { LedgerLine, NewTransaction } from './types.ts'
 
 const MIN_LINES = 2
