@@ -2,7 +2,6 @@ import { useState } from 'react'
 import Box from '@mui/material/Box'
 import Collapse from '@mui/material/Collapse'
 import IconButton from '@mui/material/IconButton'
-import Paper from '@mui/material/Paper'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -15,6 +14,10 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import { formatDateTime, formatIsoDate } from '../dates.ts'
 import { formatApiAmount } from '../money.ts'
 import type { Transaction } from '../types.ts'
+import { cardSx } from '../../../theme/index.ts'
+import { useBrand } from '../../../theme/useBrand.ts'
+
+const tabular = { fontVariantNumeric: 'tabular-nums' } as const
 
 const COLUMN_COUNT = 7
 
@@ -29,25 +32,26 @@ function EntryRow({ entry }: { entry: Transaction }) {
             size="small"
             aria-label={open ? `Hide lines of entry ${entry.numbering}` : `Show lines of entry ${entry.numbering}`}
             onClick={() => setOpen((value) => !value)}
+            sx={{ color: 'text.disabled', '&:hover': { color: 'text.primary' } }}
           >
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell sx={{ fontWeight: 600 }}>#{entry.numbering}</TableCell>
+        <TableCell sx={{ ...tabular, color: 'text.secondary' }}>{entry.numbering}</TableCell>
         <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatIsoDate(entry.applied_date)}</TableCell>
         <TableCell sx={{ whiteSpace: 'nowrap', color: 'text.secondary' }}>
           {formatDateTime(entry.created_at)}
         </TableCell>
         <TableCell>{entry.supplier || '—'}</TableCell>
         <TableCell>{entry.description || '—'}</TableCell>
-        <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+        <TableCell align="right" sx={{ ...tabular, whiteSpace: 'nowrap', fontWeight: 600 }}>
           {formatApiAmount(entry.total_debit)}
         </TableCell>
       </TableRow>
       <TableRow>
         <TableCell colSpan={COLUMN_COUNT} sx={{ py: 0 }}>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <Box sx={{ py: 1.5, pl: { sm: 6 } }}>
+            <Box sx={{ my: 1.5, ml: { sm: 6 }, px: 2, py: 1, bgcolor: 'brand.50', borderRadius: '16px' }}>
               <Table size="small" aria-label={`Lines of entry ${entry.numbering}`}>
                 <TableHead>
                   <TableRow>
@@ -60,20 +64,23 @@ function EntryRow({ entry }: { entry: Transaction }) {
                   {entry.lines.map((line) => (
                     <TableRow key={line.id}>
                       <TableCell>
-                        {line.account_code} · {line.account_name}
+                        <Box component="span" sx={{ ...tabular, color: 'text.secondary', mr: 1.25 }}>
+                          {line.account_code}
+                        </Box>
+                        {line.account_name}
                       </TableCell>
-                      <TableCell align="right">
+                      <TableCell align="right" sx={tabular}>
                         {Number(line.debit) > 0 ? formatApiAmount(line.debit) : ''}
                       </TableCell>
-                      <TableCell align="right">
+                      <TableCell align="right" sx={tabular}>
                         {Number(line.credit) > 0 ? formatApiAmount(line.credit) : ''}
                       </TableCell>
                     </TableRow>
                   ))}
-                  <TableRow sx={{ '& td': { fontWeight: 700, borderBottom: 'none' } }}>
+                  <TableRow sx={{ '& td': { fontWeight: 650, borderBottom: 'none' } }}>
                     <TableCell>Total</TableCell>
-                    <TableCell align="right">{formatApiAmount(entry.total_debit)}</TableCell>
-                    <TableCell align="right">{formatApiAmount(entry.total_credit)}</TableCell>
+                    <TableCell align="right" sx={tabular}>{formatApiAmount(entry.total_debit)}</TableCell>
+                    <TableCell align="right" sx={tabular}>{formatApiAmount(entry.total_credit)}</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -86,20 +93,21 @@ function EntryRow({ entry }: { entry: Transaction }) {
 }
 
 export default function EntryList({ entries }: { entries: Transaction[] }) {
+  const brand = useBrand()
   return (
-    <Paper variant="outlined" sx={{ p: { xs: 2, sm: 3 } }}>
-      <Typography variant="h6" component="h2" sx={{ mb: 2 }}>
+    <Box component="section" aria-labelledby="saved-entries-title" sx={{ ...cardSx(brand), p: { xs: 2.5, sm: 4 } }}>
+      <Typography id="saved-entries-title" variant="h3" component="h2" sx={{ mb: 2 }}>
         Saved entries
       </Typography>
       {entries.length === 0 ? (
-        <Typography color="text.secondary">No entries yet. Save your first one above.</Typography>
+        <Typography color="text.secondary">No entries yet. Your first saved entry will appear here.</Typography>
       ) : (
         <TableContainer>
           <Table size="small" aria-label="Saved entries">
             <TableHead>
               <TableRow>
                 <TableCell padding="checkbox" />
-                <TableCell>#</TableCell>
+                <TableCell>No.</TableCell>
                 <TableCell>Applied date</TableCell>
                 <TableCell>Created</TableCell>
                 <TableCell>Supplier</TableCell>
@@ -115,6 +123,6 @@ export default function EntryList({ entries }: { entries: Transaction[] }) {
           </Table>
         </TableContainer>
       )}
-    </Paper>
+    </Box>
   )
 }

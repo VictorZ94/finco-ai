@@ -1,8 +1,11 @@
 import Box from '@mui/material/Box'
-import Chip from '@mui/material/Chip'
+import ButtonBase from '@mui/material/ButtonBase'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import SmartToyIcon from '@mui/icons-material/SmartToy'
+import { revealSx } from '../../../theme/motion.ts'
+import { concentricRings } from '../../../theme/patterns.ts'
+import { radius } from '../../../theme/tokens.ts'
+import { useBrand } from '../../../theme/useBrand.ts'
 
 const EXAMPLES = [
   'I paid 50,000 for lunch',
@@ -14,32 +17,52 @@ interface EmptyStateProps {
   onPickExample: (text: string) => void
 }
 
+/** A tinted card with faint rings, like the reference's "Track your expenses". */
 export default function EmptyState({ onPickExample }: EmptyStateProps) {
+  const brand = useBrand()
   return (
-    <Box
-      sx={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        gap: 2,
-        px: 2,
-      }}
-    >
-      <SmartToyIcon color="primary" sx={{ fontSize: 48 }} />
-      <Typography variant="h5" component="h2">
-        How can I help with your finances?
-      </Typography>
-      <Typography color="text.secondary">
-        Describe a movement in plain words and I'll record it for you.
-      </Typography>
-      <Stack direction="row" useFlexGap sx={{ flexWrap: 'wrap', justifyContent: 'center', gap: 1 }}>
-        {EXAMPLES.map((example) => (
-          <Chip key={example} label={example} variant="outlined" onClick={() => onPickExample(example)} />
-        ))}
-      </Stack>
+    <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+      <Box
+        sx={{
+          width: '100%',
+          bgcolor: 'brand.200',
+          ...concentricRings(brand[400], 0.6),
+          border: 1,
+          borderColor: 'brand.300',
+          borderRadius: radius.card,
+          px: { xs: 3, sm: 5 },
+          py: { xs: 4, sm: 6 },
+          ...revealSx(0),
+        }}
+      >
+        <Typography variant="h1" component="h2" sx={{ maxWidth: '12ch', mb: 1.5, fontSize: { xs: '2.25rem', sm: '2.75rem' } }}>
+          What moved today?
+        </Typography>
+        <Typography sx={{ color: 'brand.900', maxWidth: '46ch', mb: 3.5 }}>
+          Describe a movement in plain words and FincoAI turns it into a ledger entry.
+        </Typography>
+        <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
+          {EXAMPLES.map((example) => (
+            <ButtonBase
+              key={example}
+              onClick={() => onPickExample(example)}
+              sx={{
+                px: 2,
+                py: 1,
+                borderRadius: radius.pill,
+                bgcolor: '#FFFFFF',
+                color: 'brand.950',
+                fontSize: '0.9375rem',
+                fontWeight: 500,
+                transition: 'background-color 150ms',
+                '&:hover': { bgcolor: 'brand.50' },
+              }}
+            >
+              {example}
+            </ButtonBase>
+          ))}
+        </Stack>
+      </Box>
     </Box>
   )
 }

@@ -10,7 +10,7 @@ export default function ChatPage() {
   return (
     <Container
       maxWidth="md"
-      sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', py: 2, gap: 2 }}
+      sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', py: { xs: 2, sm: 3 }, gap: 2 }}
     >
       <MessageList messages={messages} isSending={isSending} onPickExample={send} />
       {error && (

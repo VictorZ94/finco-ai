@@ -9,6 +9,7 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import EntryForm from './components/EntryForm.tsx'
 import EntryList from './components/EntryList.tsx'
+import { revealSx } from '../../theme/motion.ts'
 import { useLedgerData } from './useLedgerData.ts'
 import { useLedgerForm } from './useLedgerForm.ts'
 
@@ -36,12 +37,12 @@ export default function LedgerPage() {
   return (
     <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
       <Container maxWidth="lg" sx={{ py: 3 }}>
-        <Stack spacing={3}>
-          <Box>
-            <Typography variant="h5" component="h1" sx={{ fontWeight: 600 }}>
+        <Stack spacing={{ xs: 3, sm: 4 }}>
+          <Box sx={revealSx(0)}>
+            <Typography variant="h2" component="h1" sx={{ mb: 0.75 }}>
               Ledger
             </Typography>
-            <Typography color="text.secondary">
+            <Typography color="text.secondary" sx={{ maxWidth: '62ch' }}>
               Register a movement as a balanced entry: total debits must equal total credits.
             </Typography>
           </Box>
@@ -68,15 +69,19 @@ export default function LedgerPage() {
                   There are no accounts that can receive movements. Load the chart of accounts first.
                 </Alert>
               )}
-              <EntryForm
-                form={form}
-                accounts={accounts}
-                isSaving={isSaving}
-                errors={saveErrors}
-                onDismissErrors={() => setSaveErrors(null)}
-                onSubmit={() => void handleSubmit()}
-              />
-              <EntryList entries={transactions} />
+              <Box sx={revealSx(1)}>
+                <EntryForm
+                  form={form}
+                  accounts={accounts}
+                  isSaving={isSaving}
+                  errors={saveErrors}
+                  onDismissErrors={() => setSaveErrors(null)}
+                  onSubmit={() => void handleSubmit()}
+                />
+              </Box>
+              <Box sx={revealSx(2)}>
+                <EntryList entries={transactions} />
+              </Box>
             </>
           )}
         </Stack>
@@ -88,7 +93,7 @@ export default function LedgerPage() {
         onClose={() => setSavedNumber(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity="success" variant="filled" onClose={() => setSavedNumber(null)}>
+        <Alert severity="success" variant="filled" onClose={() => setSavedNumber(null)} sx={{ fontWeight: 600 }}>
           Entry #{savedNumber} saved
         </Alert>
       </Snackbar>
