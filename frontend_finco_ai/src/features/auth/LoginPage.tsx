@@ -79,7 +79,7 @@ export default function LoginPage() {
 
   if (status === 'signedIn') {
     const from = (location.state as { from?: string } | null)?.from
-    return <Navigate to={from && from !== '/login' ? from : '/chat'} replace />
+    return <Navigate to={from && from !== '/login' ? from : '/dashboard'} replace />
   }
 
   async function run(action: () => Promise<void>) {

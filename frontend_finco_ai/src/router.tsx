@@ -3,6 +3,7 @@ import AppLayout from './layouts/AppLayout.tsx'
 import LoginPage from './features/auth/LoginPage.tsx'
 import RequireAuth from './features/auth/RequireAuth.tsx'
 import ChatPage from './features/chat/ChatPage.tsx'
+import DashboardPage from './features/dashboard/DashboardPage.tsx'
 import LedgerPage from './features/ledger/LedgerPage.tsx'
 
 export const router = createBrowserRouter([
@@ -15,12 +16,13 @@ export const router = createBrowserRouter([
         path: '/',
         Component: AppLayout,
         children: [
-          { index: true, loader: () => redirect('/chat') },
+          { index: true, loader: () => redirect('/dashboard') },
+          { path: 'dashboard', Component: DashboardPage },
           { path: 'chat', Component: ChatPage },
           { path: 'ledger', Component: LedgerPage },
         ],
       },
     ],
   },
-  { path: '*', loader: () => redirect('/chat') },
+  { path: '*', loader: () => redirect('/dashboard') },
 ])

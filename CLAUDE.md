@@ -39,7 +39,7 @@ Frontend unit tests use Vitest (pure logic only, no component tests yet). Check 
 ## Frontend architecture
 
 - `src/main.tsx` sets up the providers: MUI `ThemeProvider` (theme in `src/theme/index.ts`) → `CssBaseline` → `AuthProvider` → `RouterProvider`. There is no `App.tsx` and no global CSS; style with MUI `sx`.
-- `src/router.tsx` uses data-mode routing (`createBrowserRouter`, imported from `react-router`, not `react-router-dom`). Every page is a child of `src/layouts/AppLayout.tsx`, which has the AppBar with the `NavLink` buttons and an `<Outlet/>`. Add new pages to both the router and `NAV_ITEMS`. `/` and unknown paths redirect to `/chat`.
+- `src/router.tsx` uses data-mode routing (`createBrowserRouter`, imported from `react-router`, not `react-router-dom`). Every page is a child of `src/layouts/AppLayout.tsx`, which has the AppBar with the `NavLink` buttons and an `<Outlet/>`. Add new pages to both the router and `NAV_ITEMS`. `/`, unknown paths and the post-login default go to `/dashboard` (home).
 - The code is organized by feature: `src/features/<feature>/` holds the page, a hook that owns its state, a `*Service.ts` for I/O, `types.ts` and `components/`.
 - **Auth** (`src/features/auth/`, `src/lib/`):
   - `AuthProvider` tracks the Firebase session with `onIdTokenChanged` (so profile changes such as the sign-up name show up) and calls `GET /api/me/` once per uid after sign-in. `useAuth()` returns `{ status: 'loading' | 'signedIn' | 'signedOut', user, profile }`, where `profile` is the `/api/me/` response, including `accent_color`.
@@ -47,10 +47,17 @@ Frontend unit tests use Vitest (pure logic only, no component tests yet). Check 
   - `LoginPage` offers email sign-in and sign-up, Google, and password reset. Firebase errors are mapped to messages in `authService.friendlyAuthError`.
   - **All API calls go through `src/lib/apiClient.ts` `apiFetch`**: it adds `Authorization: Bearer <ID token>`, signs out on a 401, and throws `ApiError` with flattened DRF messages.
   - `src/lib/firebase.ts` exports `auth = null` when the `VITE_FIREBASE_*` values are missing.
+- **Dashboard (`/dashboard`, home)**: `useDashboard(month)` loads `GET /api/dashboard/summary/?month=YYYY-MM`.
+  - It shows the key figures (`KeyFigures`) and a 6-month `IncomeExpenseChart` (`@mui/x-charts` `BarChart`). Chart colors come from `useBrand()`: income in 400, expenses in 700.
+  - `MonthSelector` can't go past the current month. Month helpers live in `features/dashboard/months.ts`, with English month names.
+- **Shared helpers** live in `src/lib/`:
+  - `money.ts`: integer cents. Use `toCents` for user input and `apiToCents` for signed API strings; `formatCents`, `formatApiAmount` and `formatCompact` format them.
+  - `dates.ts`: local-time dates.
+  - `apiClient.ts` and `firebase.ts`.
 - **Chat (`/chat`)**: `useChat` owns the message state. `chatService.sendMessage()` is currently a **mock** (a delay plus an echo) and is the one place to connect the backend. Messages are not persisted.
 - **Ledger (`/ledger`)**: a manual journal-entry form plus the list of saved entries. It uses the real API through `ledgerService.ts` (`apiFetch`).
   - `useLedgerForm` owns the form state and enforces debit XOR credit per line and balanced totals.
-  - Money is handled as **integer cents** (`money.ts`), never floats, and sent to the API as decimal strings. Dates are built in local time (`dates.ts`), not UTC.
+  - Money is handled as **integer cents** (`src/lib/money.ts`), never floats, and sent to the API as decimal strings. Dates are built in local time (`src/lib/dates.ts`), not UTC.
   - The lines render as a table on `sm` screens and up, and as stacked cards on phones.
 
 Visual design: professional, monochrome, user-selectable color (details in `docs/05-visual-design.md`; the user steers design with references):
@@ -82,13 +89,14 @@ Settings are split up in `finco_ai/finco_ai/settings/`:
 - Switch environments with `DJANGO_SETTINGS_MODULE=finco_ai.settings.prod`. Check production settings with `manage.py check --deploy`.
 - Never hardcode secrets: add new ones to `.env.example` and read them with `env(...)`.
 
-Each domain is its own Django app: `users`, `financial_accounts`, `transactions`, `ai_chat`, `dashboard`. All are in `INSTALLED_APPS`. `ai_chat` and `dashboard` have no views yet.
+Each domain is its own Django app: `users`, `financial_accounts`, `transactions`, `ai_chat`, `dashboard`. All are in `INSTALLED_APPS`. `ai_chat` has no views yet.
 
 API (Django REST Framework, `REST_FRAMEWORK` in `base.py`):
 - Each app has a `urls.py`, included under `api/` in `finco_ai/urls.py`.
 - Endpoints:
   - `GET /api/accounts/?postable=true` (`financial_accounts.views`)
   - `GET/POST /api/transactions/` (`transactions.views`)
+  - `GET /api/dashboard/summary/?month=YYYY-MM` (`dashboard.views`; the figures come from `dashboard/services.build_summary`)
   - `GET/PATCH /api/me/` (`users.views`): PATCH only changes `accent_color`; identity fields are read-only
 - **Auth is Firebase only** (`users` app):
   - `users.authentication.FirebaseAuthentication` + `IsAuthenticated` are the DRF defaults. Every request needs `Authorization: Bearer <Firebase ID token>`; otherwise it gets a 401.
@@ -121,5 +129,9 @@ How the models relate:
   - lines may only use the user's own accounts that have `can_receive_movement`.
 
   Tests live in `transactions/tests.py`.
+- **Dashboard figures**, per user and filtered by `applied_date`:
+  - **Income** = Σ(credit − debit) on INCOME, and **expenses** = Σ(debit − credit) on EXPENSE, both for the month.
+  - **Assets**, **liabilities** and **net worth** are balances as of the month's last day.
+  - Use ORM aggregation (`Sum(Case(When…))`, `TruncMonth`), never Python loops over entries.
 - `TIME_ZONE` is `UTC`, so the server-side default for `applied_date` is the UTC date. The frontend always sends the local date.
 - `ai_chat` has `Conversation` (owned by `user_id`) and `ConversationMemory` (a one-to-one rolling `summary` used as LLM context).

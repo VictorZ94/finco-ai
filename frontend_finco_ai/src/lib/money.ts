@@ -34,3 +34,22 @@ export function formatCents(cents: number): string {
 export function formatApiAmount(value: string): string {
   return formatCents(toCents(value) ?? 0)
 }
+
+/** Parse an API decimal string that may be negative ("-130000.00") to cents. */
+export function apiToCents(value: string): number {
+  const negative = value.trim().startsWith('-')
+  const cents = toCents(value.trim().replace(/^-/, '')) ?? 0
+  return negative ? -cents : cents
+}
+
+const compact = new Intl.NumberFormat('es-CO', {
+  style: 'currency',
+  currency: 'COP',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+})
+
+/** Short money for chart axes, e.g. 3000000 pesos -> "$ 3 M". */
+export function formatCompact(cents: number): string {
+  return compact.format(cents / 100)
+}

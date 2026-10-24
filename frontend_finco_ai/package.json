@@ -16,6 +16,7 @@
     "@fontsource-variable/geist": "^5.3.0",
     "@mui/icons-material": "^9.5.0",
     "@mui/material": "^9.5.0",
+    "@mui/x-charts": "^9.16.0",
     "culori": "^4.0.2",
     "firebase": "^13.1.0",
     "react": "^19.3.1",

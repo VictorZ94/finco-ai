@@ -5,10 +5,12 @@ import ButtonBase from '@mui/material/ButtonBase'
 import Toolbar from '@mui/material/Toolbar'
 import ChatIcon from '@mui/icons-material/ChatOutlined'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLongOutlined'
+import DashboardIcon from '@mui/icons-material/SpaceDashboardOutlined'
 import Wordmark from '../components/Wordmark.tsx'
 import UserMenu from './UserMenu.tsx'
 
 const NAV_ITEMS = [
+  { to: '/dashboard', label: 'Dashboard', icon: <DashboardIcon fontSize="small" /> },
   { to: '/chat', label: 'Chat', icon: <ChatIcon fontSize="small" /> },
   { to: '/ledger', label: 'Ledger', icon: <ReceiptLongIcon fontSize="small" /> },
 ]
