@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -15,6 +14,9 @@ import { PRESETS, contrastReport, scaleFromSeed } from '../../theme/palette.ts'
 import { useThemeColor } from '../../theme/themeColorContext.ts'
 import { radius } from '../../theme/tokens.ts'
 
+// The presets never change: build their scales once, not on every render.
+const PRESET_SCALES = new Map(PRESETS.map((preset) => [preset.id, scaleFromSeed(preset.seed)]))
+
 interface AppearanceDialogProps {
   open: boolean
   onClose: () => void
@@ -23,7 +25,7 @@ interface AppearanceDialogProps {
 /** Lets the user pick the app's brand color; every option is contrast-checked. */
 export default function AppearanceDialog({ open, onClose }: AppearanceDialogProps) {
   const { seed, setSeed, saveError } = useThemeColor()
-  const report = useMemo(() => contrastReport(scaleFromSeed(seed)), [seed])
+  const report = contrastReport(scaleFromSeed(seed))
   const activePreset = PRESETS.find((preset) => preset.seed.toUpperCase() === seed)
 
   return (
@@ -47,7 +49,7 @@ export default function AppearanceDialog({ open, onClose }: AppearanceDialogProp
           sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(4, 1fr)', sm: 'repeat(8, 1fr)' }, gap: 1.5, mb: 2 }}
         >
           {PRESETS.map((preset) => {
-            const scale = scaleFromSeed(preset.seed)
+            const scale = PRESET_SCALES.get(preset.id)!
             const selected = activePreset?.id === preset.id
             return (
               <Stack key={preset.id} spacing={0.75} sx={{ alignItems: 'center' }}>
