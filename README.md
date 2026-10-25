@@ -29,7 +29,7 @@ AI-assisted personal bookkeeping in Colombian pesos. You describe your income an
 | Area | Technology |
 |---|---|
 | Backend | Python 3.12, Django 6.1, Django REST Framework, PostgreSQL 18 (Docker), Firebase Admin SDK |
-| Frontend | React 19, TypeScript, Vite 8, MUI v9, MUI X Charts, React Router v8, Firebase JS SDK, Geist font |
+| Frontend | React 19, TypeScript, Vite 8, MUI v9, MUI X Charts, React Router v8, axios, TanStack Query, react-hook-form + zod, Firebase JS SDK, Geist font |
 | Tests | Django test runner (backend), Vitest (frontend logic) |
 
 ## Project structure
@@ -91,7 +91,7 @@ Open **http://localhost:5173**. Vite proxies `/api` to Django on `127.0.0.1:8000
 | `manage.py reassign_user_data --from <old> --to <uid> [--replace]` | `finco_ai/` | Move data between owners |
 | `npm run build` | `frontend_finco_ai/` | Type-check + production build |
 | `npm run lint` | `frontend_finco_ai/` | ESLint |
-| `npm run test` | `frontend_finco_ai/` | Vitest (palette contrast, money and month helpers) |
+| `npm run test` | `frontend_finco_ai/` | Vitest (palette contrast, money and month helpers, form schemas, API errors) |
 
 ## API overview
 
@@ -114,4 +114,5 @@ The project is built one step at a time; each finished step is documented in [`d
 4. Firebase authentication
 5. Visual design and user-selectable color
 6. Dashboard
-7. *Next:* connect the AI model to the chat, so it turns plain-language messages into ledger entries
+7. Frontend refactor: axios, TanStack Query, react-hook-form + zod
+8. *Next:* connect the AI model to the chat, so it turns plain-language messages into ledger entries
