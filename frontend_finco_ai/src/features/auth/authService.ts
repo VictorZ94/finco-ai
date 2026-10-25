@@ -9,26 +9,25 @@ import {
   updateProfile,
   type Auth,
 } from 'firebase/auth'
-import { apiFetch } from '../../lib/apiClient.ts'
+import { api } from '../../lib/apiClient.ts'
 import { auth } from '../../lib/firebase.ts'
-import type { AppUserProfile } from './authContext.ts'
+import type { AppUserProfile } from './types.ts'
 
 function requireAuth(): Auth {
   if (!auth) throw new Error('Firebase is not configured.')
   return auth
 }
 
-/** Registers the signed-in user with the backend (creates their profile and default chart). */
-export function registerWithBackend(): Promise<AppUserProfile> {
-  return apiFetch<AppUserProfile>('/api/me/')
+/** The current user's profile. The first call registers them with the backend (profile + default chart). */
+export async function fetchProfile(): Promise<AppUserProfile> {
+  const { data } = await api.get<AppUserProfile>('/me/')
+  return data
 }
 
 /** Saves the user's brand color seed (#RRGGBB, or "" for the default). */
-export function saveAccentColor(accentColor: string): Promise<AppUserProfile> {
-  return apiFetch<AppUserProfile>('/api/me/', {
-    method: 'PATCH',
-    body: JSON.stringify({ accent_color: accentColor }),
-  })
+export async function saveAccentColor(accentColor: string): Promise<AppUserProfile> {
+  const { data } = await api.patch<AppUserProfile>('/me/', { accent_color: accentColor })
+  return data
 }
 
 export async function signInWithEmail(email: string, password: string): Promise<void> {
@@ -39,9 +38,8 @@ export async function signUpWithEmail(name: string, email: string, password: str
   const { user } = await createUserWithEmailAndPassword(requireAuth(), email.trim(), password)
   if (name.trim()) {
     await updateProfile(user, { displayName: name.trim() })
-    // Refresh the token so it carries the new name, then update the backend profile.
+    // Refresh the token so it carries the new name; the caller then refetches the profile.
     await user.getIdToken(true)
-    await registerWithBackend()
   }
 }
 

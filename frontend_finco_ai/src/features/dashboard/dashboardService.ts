@@ -1,6 +1,7 @@
-import { apiFetch } from '../../lib/apiClient.ts'
+import { api } from '../../lib/apiClient.ts'
 import type { DashboardSummary } from './types.ts'
 
-export function fetchSummary(month: string): Promise<DashboardSummary> {
-  return apiFetch<DashboardSummary>(`/api/dashboard/summary/?month=${encodeURIComponent(month)}`)
+export async function fetchSummary(month: string): Promise<DashboardSummary> {
+  const { data } = await api.get<DashboardSummary>('/dashboard/summary/', { params: { month } })
+  return data
 }

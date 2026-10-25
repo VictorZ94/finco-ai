@@ -1,3 +1,4 @@
+import axios, { isAxiosError } from 'axios'
 import { signOut } from 'firebase/auth'
 import { auth } from './firebase.ts'
 
@@ -28,38 +29,34 @@ function collectMessages(value: unknown, path = ''): string[] {
   return []
 }
 
-/**
- * fetch() for the FincoAI API: sends the signed-in user's Firebase ID token
- * (refreshed automatically by the SDK) and turns error responses into ApiError.
- */
-export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
+/** Turns any request failure into an ApiError with messages fit to show the user. */
+export function toApiError(error: unknown): ApiError {
+  if (error instanceof ApiError) return error
+  const status = isAxiosError(error) ? (error.response?.status ?? 0) : 0
+  // An HTML body (e.g. the dev proxy's page when the backend is down) yields no messages.
+  const body: unknown = isAxiosError(error) ? error.response?.data : null
+  const messages = typeof body === 'object' ? collectMessages(body) : []
+  if (messages.length > 0) return new ApiError(status, [...new Set(messages)])
+  return new ApiError(status, [
+    status ? `Request failed (${status}). Is the backend running?` : 'Could not reach the server. Is the backend running?',
+  ])
+}
+
+/** The FincoAI API. Every request carries the signed-in user's Firebase ID token (refreshed by the SDK). */
+export const api = axios.create({ baseURL: '/api', headers: { Accept: 'application/json' } })
+
+api.interceptors.request.use(async (config) => {
   const user = auth?.currentUser
   if (!user) throw new ApiError(401, ['Please sign in again.'])
+  config.headers.set('Authorization', `Bearer ${await user.getIdToken()}`)
+  return config
+})
 
-  const response = await fetch(url, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      Authorization: `Bearer ${await user.getIdToken()}`,
-    },
-  })
-  if (response.ok) return (await response.json()) as T
-
-  if (response.status === 401 && auth) {
+api.interceptors.response.use(undefined, async (error: unknown) => {
+  const apiError = toApiError(error)
+  if (apiError.status === 401 && auth?.currentUser) {
     // The backend rejected the token: end the session; the route guard shows the login page.
     await signOut(auth)
   }
-
-  let body: unknown = null
-  try {
-    body = await response.json()
-  } catch {
-    // Non-JSON error (e.g. the backend is down and the dev proxy returned HTML).
-  }
-  const messages = collectMessages(body)
-  throw new ApiError(
-    response.status,
-    messages.length > 0 ? [...new Set(messages)] : [`Request failed (${response.status}). Is the backend running?`],
-  )
-}
+  throw apiError
+})

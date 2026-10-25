@@ -1,4 +1,5 @@
-import type { FormEvent } from 'react'
+import { useState } from 'react'
+import { Controller, useWatch, type Control, type UseFormSetValue } from 'react-hook-form'
 import Alert from '@mui/material/Alert'
 import Autocomplete from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
@@ -7,6 +8,7 @@ import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
 import Paper from '@mui/material/Paper'
+import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
@@ -25,104 +27,127 @@ import CheckIcon from '@mui/icons-material/Check'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined'
 import SaveIcon from '@mui/icons-material/Save'
+import FormTextField from '../../../components/FormTextField.tsx'
 import { formatDateTime } from '../../../lib/dates.ts'
-import { formatCents, isValidAmount } from '../../../lib/money.ts'
-import type { Account, LedgerLine } from '../types.ts'
-import type { LedgerForm } from '../useLedgerForm.ts'
-import { useNow } from '../useNow.ts'
+import { formatCents, isValidAmount, toCents } from '../../../lib/money.ts'
 import { cardSx } from '../../../theme/index.ts'
 import { danger } from '../../../theme/tokens.ts'
 import { useBrand } from '../../../theme/useBrand.ts'
+import { emptyEntry, emptyLine, entryTotals, firstProblem, type EntryFormValues } from '../entrySchema.ts'
+import type { Account, NewTransaction } from '../types.ts'
+import { useEntryForm } from '../useEntryForm.ts'
+import { useCreateTransaction } from '../useLedgerQueries.ts'
+import { useNow } from '../useNow.ts'
 
-interface EntryFormProps {
-  form: LedgerForm
-  accounts: Account[]
-  isSaving: boolean
-  errors: string[] | null
-  onDismissErrors: () => void
-  onSubmit: () => void
-}
+type EntryControl = Control<EntryFormValues, unknown, NewTransaction>
+type Side = 'debit' | 'credit'
 
 function accountLabel(account: Account) {
   return `${account.code} · ${account.name}`
 }
 
+/** Its own component so the ticking clock re-renders only this field, not the whole form. */
+function CurrentDateField() {
+  const now = useNow()
+  return <TextField label="Current date" value={formatDateTime(now)} disabled helperText="Set automatically" size="small" />
+}
+
 interface AmountFieldProps {
-  ariaLabel: string
-  label?: string
-  value: string
-  disabled: boolean
-  onChange: (value: string) => void
-}
-
-function AmountField({ ariaLabel, label, value, disabled, onChange }: AmountFieldProps) {
-  return (
-    <TextField
-      label={label}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      disabled={disabled}
-      placeholder="0"
-      size="small"
-      fullWidth
-      // Let amount inputs shrink inside the phone layout's two-column row.
-      sx={{ minWidth: 0 }}
-      error={!isValidAmount(value)}
-      slotProps={{
-        input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
-        htmlInput: {
-          inputMode: 'decimal',
-          'aria-label': ariaLabel,
-          style: { textAlign: 'right', fontVariantNumeric: 'tabular-nums' },
-        },
-      }}
-    />
-  )
-}
-
-interface LineProps {
-  line: LedgerLine
+  control: EntryControl
+  setValue: UseFormSetValue<EntryFormValues>
   index: number
-  accounts: Account[]
-  form: LedgerForm
+  side: Side
+  withLabel: boolean
 }
 
-function AccountField({ line, accounts, form }: Omit<LineProps, 'index'>) {
+/** Debit XOR credit: a side is locked while the other one has a value, and typing in one clears the other. */
+function AmountField({ control, setValue, index, side, withLabel }: AmountFieldProps) {
+  const other: Side = side === 'debit' ? 'credit' : 'debit'
+  const otherHasValue = useWatch({ control, name: `lines.${index}.${other}`, compute: (value) => value.trim() !== '' })
+  const label = side === 'debit' ? 'Debit' : 'Credit'
+
   return (
-    <Autocomplete
-      options={accounts}
-      value={line.account}
-      onChange={(_, account) => form.updateLine(line.key, { account })}
-      getOptionLabel={accountLabel}
-      isOptionEqualToValue={(option, value) => option.id === value.id}
-      renderOption={(props, option) => {
-        const { key, ...optionProps } = props
-        return (
-          <li key={key} {...optionProps}>
-            <Box component="span" sx={{ color: 'text.secondary', mr: 1.25, minWidth: '7ch', fontVariantNumeric: 'tabular-nums' }}>
-              {option.code}
-            </Box>
-            {option.name}
-          </li>
-        )
-      }}
-      size="small"
-      fullWidth
-      renderInput={(params) => <TextField {...params} placeholder="Choose an account" />}
+    <Controller
+      control={control}
+      name={`lines.${index}.${side}`}
+      render={({ field }) => (
+        <TextField
+          label={withLabel ? label : undefined}
+          value={field.value}
+          onChange={(event) => {
+            field.onChange(event.target.value)
+            if (event.target.value.trim() !== '') setValue(`lines.${index}.${other}`, '')
+          }}
+          onBlur={field.onBlur}
+          inputRef={field.ref}
+          // The TextField (not the Controller) is disabled, so the value stays registered.
+          disabled={otherHasValue}
+          placeholder="0"
+          size="small"
+          fullWidth
+          // Let amount inputs shrink inside the phone layout's two-column row.
+          sx={{ minWidth: 0 }}
+          error={!isValidAmount(field.value)}
+          slotProps={{
+            input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
+            htmlInput: {
+              inputMode: 'decimal',
+              'aria-label': `Line ${index + 1} ${side}`,
+              style: { textAlign: 'right', fontVariantNumeric: 'tabular-nums' },
+            },
+          }}
+        />
+      )}
     />
   )
 }
 
-function RemoveLineButton({ line, index, form }: Omit<LineProps, 'accounts'>) {
+function AccountField({ control, index, accounts }: { control: EntryControl; index: number; accounts: Account[] }) {
   return (
-    <Tooltip title={form.canRemoveLine ? 'Remove line' : 'An entry needs at least 2 lines'}>
-      <span>
-        <IconButton
-          aria-label={`Remove line ${index + 1}`}
-          onClick={() => form.removeLine(line.key)}
-          disabled={!form.canRemoveLine}
+    <Controller
+      control={control}
+      name={`lines.${index}.account`}
+      render={({ field, fieldState }) => (
+        <Autocomplete
+          options={accounts}
+          value={field.value}
+          onChange={(_, account) => field.onChange(account)}
+          onBlur={field.onBlur}
+          getOptionLabel={accountLabel}
+          isOptionEqualToValue={(option, value) => option.id === value.id}
+          renderOption={(props, option) => {
+            const { key, ...optionProps } = props
+            return (
+              <li key={key} {...optionProps}>
+                <Box component="span" sx={{ color: 'text.secondary', mr: 1.25, minWidth: '7ch', fontVariantNumeric: 'tabular-nums' }}>
+                  {option.code}
+                </Box>
+                {option.name}
+              </li>
+            )
+          }}
           size="small"
-        >
+          fullWidth
+          renderInput={(params) => (
+            <TextField {...params} inputRef={field.ref} placeholder="Choose an account" error={fieldState.invalid} />
+          )}
+        />
+      )}
+    />
+  )
+}
+
+interface RemoveLineButtonProps {
+  index: number
+  canRemove: boolean
+  onRemove: (index: number) => void
+}
+
+function RemoveLineButton({ index, canRemove, onRemove }: RemoveLineButtonProps) {
+  return (
+    <Tooltip title={canRemove ? 'Remove line' : 'An entry needs at least 2 lines'}>
+      <span>
+        <IconButton aria-label={`Remove line ${index + 1}`} onClick={() => onRemove(index)} disabled={!canRemove} size="small">
           <DeleteOutlineIcon fontSize="small" />
         </IconButton>
       </span>
@@ -130,39 +155,31 @@ function RemoveLineButton({ line, index, form }: Omit<LineProps, 'accounts'>) {
   )
 }
 
-/** Debit XOR credit: a side is locked while the other one has a value. */
-function amountFields(line: LedgerLine, index: number, form: LedgerForm, withLabels: boolean) {
-  return {
-    debit: (
-      <AmountField
-        ariaLabel={`Line ${index + 1} debit`}
-        label={withLabels ? 'Debit' : undefined}
-        value={line.debit}
-        disabled={line.credit.trim() !== ''}
-        onChange={(debit) => form.updateLine(line.key, { debit })}
-      />
-    ),
-    credit: (
-      <AmountField
-        ariaLabel={`Line ${index + 1} credit`}
-        label={withLabels ? 'Credit' : undefined}
-        value={line.credit}
-        disabled={line.debit.trim() !== ''}
-        onChange={(credit) => form.updateLine(line.key, { credit })}
-      />
-    ),
-  }
-}
-
-function TotalAmount({ cents, testId }: { cents: number; testId: string }) {
+/** A live total; it watches only its side, so typing re-renders just this number. */
+function SideTotal({ control, side }: { control: EntryControl; side: Side }) {
+  const cents = useWatch({
+    control,
+    name: 'lines',
+    compute: (lines) => lines.reduce((sum, line) => sum + (toCents(line[side]) ?? 0), 0),
+  })
   return (
-    <Typography component="span" variant="money" data-testid={testId} sx={{ fontSize: '1.0625rem', fontWeight: 600 }}>
+    <Typography component="span" variant="money" data-testid={`total-${side}`} sx={{ fontSize: '1.0625rem', fontWeight: 600 }}>
       {formatCents(cents)}
     </Typography>
   )
 }
 
-function LinesTable({ form, accounts }: { form: LedgerForm; accounts: Account[] }) {
+interface LinesProps {
+  control: EntryControl
+  setValue: UseFormSetValue<EntryFormValues>
+  fieldIds: string[]
+  accounts: Account[]
+  canRemove: boolean
+  onAdd: () => void
+  onRemove: (index: number) => void
+}
+
+function LinesTable({ control, setValue, fieldIds, accounts, canRemove, onAdd, onRemove }: LinesProps) {
   return (
     <TableContainer sx={{ mb: 2 }}>
       <Table size="small" aria-label="Entry lines" sx={{ tableLayout: 'fixed' }}>
@@ -179,26 +196,27 @@ function LinesTable({ form, accounts }: { form: LedgerForm; accounts: Account[] 
           </TableRow>
         </TableHead>
         <TableBody>
-          {form.lines.map((line, index) => {
-            const amounts = amountFields(line, index, form, false)
-            return (
-              <TableRow key={line.key}>
-                <TableCell>
-                  <AccountField line={line} accounts={accounts} form={form} />
-                </TableCell>
-                <TableCell>{amounts.debit}</TableCell>
-                <TableCell>{amounts.credit}</TableCell>
-                <TableCell align="center" sx={{ px: 1 }}>
-                  <RemoveLineButton line={line} index={index} form={form} />
-                </TableCell>
-              </TableRow>
-            )
-          })}
+          {fieldIds.map((id, index) => (
+            <TableRow key={id}>
+              <TableCell>
+                <AccountField control={control} index={index} accounts={accounts} />
+              </TableCell>
+              <TableCell>
+                <AmountField control={control} setValue={setValue} index={index} side="debit" withLabel={false} />
+              </TableCell>
+              <TableCell>
+                <AmountField control={control} setValue={setValue} index={index} side="credit" withLabel={false} />
+              </TableCell>
+              <TableCell align="center" sx={{ px: 1 }}>
+                <RemoveLineButton index={index} canRemove={canRemove} onRemove={onRemove} />
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
         <TableFooter>
           <TableRow>
             <TableCell colSpan={4} sx={{ borderBottom: 'none', py: 1.5 }}>
-              <Button startIcon={<AddIcon />} onClick={form.addLine} size="small">
+              <Button startIcon={<AddIcon />} onClick={onAdd} size="small">
                 Add line
               </Button>
             </TableCell>
@@ -212,10 +230,10 @@ function LinesTable({ form, accounts }: { form: LedgerForm; accounts: Account[] 
               </Typography>
             </TableCell>
             <TableCell align="right">
-              <TotalAmount cents={form.totalDebit} testId="total-debit" />
+              <SideTotal control={control} side="debit" />
             </TableCell>
             <TableCell align="right">
-              <TotalAmount cents={form.totalCredit} testId="total-credit" />
+              <SideTotal control={control} side="credit" />
             </TableCell>
             <TableCell />
           </TableRow>
@@ -226,31 +244,28 @@ function LinesTable({ form, accounts }: { form: LedgerForm; accounts: Account[] 
 }
 
 /** Phone layout: each line is a small card with labeled amounts. */
-function LinesStacked({ form, accounts }: { form: LedgerForm; accounts: Account[] }) {
+function LinesStacked({ control, setValue, fieldIds, accounts, canRemove, onAdd, onRemove }: LinesProps) {
   return (
     <Stack spacing={1.5} sx={{ mb: 2 }} aria-label="Entry lines">
-      {form.lines.map((line, index) => {
-        const amounts = amountFields(line, index, form, true)
-        return (
-          <Paper key={line.key} variant="outlined" sx={{ p: 1.5, bgcolor: 'brand.50', borderRadius: '16px' }}>
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1.5 }}>
-              <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
-                Line {index + 1}
-              </Typography>
-              <RemoveLineButton line={line} index={index} form={form} />
+      {fieldIds.map((id, index) => (
+        <Paper key={id} variant="outlined" sx={{ p: 1.5, bgcolor: 'brand.50', borderRadius: '16px' }}>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1.5 }}>
+            <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
+              Line {index + 1}
+            </Typography>
+            <RemoveLineButton index={index} canRemove={canRemove} onRemove={onRemove} />
+          </Stack>
+          <Stack spacing={1.5}>
+            <AccountField control={control} index={index} accounts={accounts} />
+            <Stack direction="row" spacing={1}>
+              <AmountField control={control} setValue={setValue} index={index} side="debit" withLabel />
+              <AmountField control={control} setValue={setValue} index={index} side="credit" withLabel />
             </Stack>
-            <Stack spacing={1.5}>
-              <AccountField line={line} accounts={accounts} form={form} />
-              <Stack direction="row" spacing={1}>
-                {amounts.debit}
-                {amounts.credit}
-              </Stack>
-            </Stack>
-          </Paper>
-        )
-      })}
+          </Stack>
+        </Paper>
+      ))}
       <Box>
-        <Button startIcon={<AddIcon />} onClick={form.addLine} size="small">
+        <Button startIcon={<AddIcon />} onClick={onAdd} size="small">
           Add line
         </Button>
       </Box>
@@ -268,19 +283,20 @@ function LinesStacked({ form, accounts }: { form: LedgerForm; accounts: Account[
         }}
       >
         <Typography color="text.secondary">Total debit</Typography>
-        <TotalAmount cents={form.totalDebit} testId="total-debit" />
+        <SideTotal control={control} side="debit" />
         <Typography color="text.secondary">Total credit</Typography>
-        <TotalAmount cents={form.totalCredit} testId="total-credit" />
+        <SideTotal control={control} side="credit" />
       </Box>
     </Stack>
   )
 }
 
-function BalanceChip({ form }: { form: LedgerForm }) {
-  if (form.isBalanced) {
+function BalanceChip({ control }: { control: EntryControl }) {
+  const { isBalanced, difference, totalDebit, totalCredit } = useWatch({ control, name: 'lines', compute: entryTotals })
+  if (isBalanced) {
     return <Chip icon={<CheckIcon />} label="Balanced" sx={{ '& .MuiChip-icon': { color: 'brand.900' } }} />
   }
-  if (form.totalDebit + form.totalCredit === 0) {
+  if (totalDebit + totalCredit === 0) {
     return <Chip label="No amounts yet" variant="outlined" />
   }
   return (
@@ -290,7 +306,7 @@ function BalanceChip({ form }: { form: LedgerForm }) {
         <>
           Difference{' '}
           <Box component="span" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-            {formatCents(Math.abs(form.difference))}
+            {formatCents(Math.abs(difference))}
           </Box>
         </>
       }
@@ -299,26 +315,50 @@ function BalanceChip({ form }: { form: LedgerForm }) {
   )
 }
 
-export default function EntryForm({
-  form,
-  accounts,
-  isSaving,
-  errors,
-  onDismissErrors,
-  onSubmit,
-}: EntryFormProps) {
-  const now = useNow()
+/** The first rule the entry still breaks, shown next to the disabled Save button. */
+function SaveHint({ control }: { control: EntryControl }) {
+  const problem = useWatch({ control, compute: firstProblem })
+  if (!problem) return null
+  return (
+    <Typography variant="body2" color="text.secondary">
+      {problem}
+    </Typography>
+  )
+}
+
+export default function EntryForm({ accounts }: { accounts: Account[] }) {
   const brand = useBrand()
   const theme = useTheme()
   const isCompact = useMediaQuery(theme.breakpoints.down('sm'))
+  const { form, lines, canRemoveLine } = useEntryForm()
+  const { control, setValue, handleSubmit, reset, formState } = form
+  const save = useCreateTransaction()
+  const [savedNumber, setSavedNumber] = useState<string | null>(null)
 
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault()
-    if (form.canSave && !isSaving) onSubmit()
+  const onSubmit = handleSubmit((payload) => {
+    if (save.isPending) return
+    save.mutate(payload, {
+      onSuccess: (created) => {
+        setSavedNumber(created.numbering)
+        reset(emptyEntry())
+      },
+    })
+  })
+
+  const linesProps: LinesProps = {
+    control,
+    setValue,
+    fieldIds: lines.fields.map((field) => field.id),
+    accounts,
+    canRemove: canRemoveLine,
+    onAdd: () => lines.append(emptyLine(), { shouldFocus: false }),
+    onRemove: (index) => {
+      if (canRemoveLine) lines.remove(index)
+    },
   }
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ ...cardSx(brand), p: { xs: 2.5, sm: 4 } }}>
+    <Box component="form" noValidate onSubmit={onSubmit} sx={{ ...cardSx(brand), p: { xs: 2.5, sm: 4 } }}>
       <Typography variant="h3" component="h2" sx={{ mb: 3 }}>
         New entry
       </Typography>
@@ -331,45 +371,35 @@ export default function EntryForm({
           mb: 3,
         }}
       >
-        <TextField
-          label="Current date"
-          value={formatDateTime(now)}
-          disabled
-          helperText="Set automatically"
-          size="small"
-        />
-        <TextField
+        <CurrentDateField />
+        <FormTextField
+          control={control}
+          name="appliedDate"
           label="Applied date"
           type="date"
-          value={form.appliedDate}
-          onChange={(event) => form.setAppliedDate(event.target.value)}
           required
           size="small"
           slotProps={{ inputLabel: { shrink: true } }}
         />
-        <TextField
+        <FormTextField
+          control={control}
+          name="supplier"
           label="Supplier"
-          value={form.supplier}
-          onChange={(event) => form.setSupplier(event.target.value)}
           placeholder="Person or company (optional)"
           size="small"
           slotProps={{ htmlInput: { maxLength: 255 } }}
         />
-        <TextField
+        <FormTextField
+          control={control}
+          name="description"
           label="Description"
-          value={form.description}
-          onChange={(event) => form.setDescription(event.target.value)}
           placeholder="What was this movement? (optional)"
           size="small"
           sx={{ gridColumn: '1 / -1' }}
         />
       </Box>
 
-      {isCompact ? (
-        <LinesStacked form={form} accounts={accounts} />
-      ) : (
-        <LinesTable form={form} accounts={accounts} />
-      )}
+      {isCompact ? <LinesStacked {...linesProps} /> : <LinesTable {...linesProps} />}
 
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
@@ -377,24 +407,20 @@ export default function EntryForm({
         sx={{ alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between' }}
       >
         <Box>
-          <BalanceChip form={form} />
+          <BalanceChip control={control} />
         </Box>
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           spacing={1}
           sx={{ alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'flex-end' }}
         >
-          {!form.canSave && (
-            <Typography variant="body2" color="text.secondary">
-              {form.problems[0]}
-            </Typography>
-          )}
+          <SaveHint control={control} />
           <Button
             type="submit"
             variant="contained"
             startIcon={<SaveIcon />}
-            disabled={!form.canSave}
-            loading={isSaving}
+            disabled={!formState.isValid}
+            loading={save.isPending}
             sx={{ whiteSpace: 'nowrap' }}
           >
             Save entry
@@ -402,13 +428,24 @@ export default function EntryForm({
         </Stack>
       </Stack>
 
-      {errors && (
-        <Alert severity="error" onClose={onDismissErrors} sx={{ mt: 2 }}>
-          {errors.map((message) => (
+      {save.error && (
+        <Alert severity="error" onClose={save.reset} sx={{ mt: 2 }}>
+          {save.error.messages.map((message) => (
             <div key={message}>{message}</div>
           ))}
         </Alert>
       )}
+
+      <Snackbar
+        open={savedNumber !== null}
+        autoHideDuration={4000}
+        onClose={() => setSavedNumber(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="success" variant="filled" onClose={() => setSavedNumber(null)} sx={{ fontWeight: 600 }}>
+          Entry #{savedNumber} saved
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

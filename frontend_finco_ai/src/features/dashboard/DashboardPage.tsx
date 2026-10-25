@@ -16,7 +16,7 @@ import KeyFigures from './components/KeyFigures.tsx'
 import MonthSelector from './components/MonthSelector.tsx'
 import { currentMonth } from './months.ts'
 import type { DashboardSummary } from './types.ts'
-import { useDashboard } from './useDashboard.ts'
+import { useDashboardSummary } from './useDashboardSummary.ts'
 
 function hasNoActivity(summary: DashboardSummary) {
   const zero = (value: string) => Number(value) === 0
@@ -52,7 +52,7 @@ function NoActivity() {
 
 export default function DashboardPage() {
   const [month, setMonth] = useState(currentMonth)
-  const { data, error, isLoading, retry } = useDashboard(month)
+  const { data, error, isPlaceholderData, refetch } = useDashboardSummary(month)
 
   return (
     <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
@@ -76,12 +76,12 @@ export default function DashboardPage() {
             <Alert
               severity="error"
               action={
-                <Button color="inherit" size="small" onClick={retry}>
+                <Button color="inherit" size="small" onClick={() => void refetch()}>
                   Retry
                 </Button>
               }
             >
-              {error.join(' ')}
+              {error.messages.join(' ')}
             </Alert>
           ) : !data ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -93,7 +93,7 @@ export default function DashboardPage() {
             </Box>
           ) : (
             // Dim while another month loads, instead of swapping in a spinner.
-            <Stack spacing={2} sx={{ opacity: isLoading ? 0.55 : 1, transition: 'opacity 150ms' }} aria-busy={isLoading}>
+            <Stack spacing={2} sx={{ opacity: isPlaceholderData ? 0.55 : 1, transition: 'opacity 150ms' }} aria-busy={isPlaceholderData}>
               <Box sx={revealSx(1)}>
                 <KeyFigures summary={data} />
               </Box>
