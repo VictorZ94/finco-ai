@@ -1,3 +1,5 @@
+.agents
+.claude
 .venv
 __pycache__/
 *.pyc
@@ -5,3 +7,4 @@ db.sqlite3
 .playwright-cli/
 .env
 staticfiles/
+skills-lock.json
