@@ -13,8 +13,8 @@ import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import Typography from '@mui/material/Typography'
 import GoogleIcon from '@mui/icons-material/Google'
-import FormTextField from '../../components/FormTextField.tsx'
-import Wordmark from '../../components/Wordmark.tsx'
+import FormTextField from '@components/FormTextField.tsx'
+import Wordmark from '@components/Wordmark.tsx'
 import { isFirebaseConfigured } from '../../lib/firebase.ts'
 import { revealSx } from '../../theme/motion.ts'
 import { concentricRings } from '../../theme/patterns.ts'
@@ -28,7 +28,7 @@ import {
   signUpWithEmail,
 } from './authService.ts'
 import { signInSchema, signUpSchema, type AuthMode, type Credentials, type CredentialsInput } from './authSchemas.ts'
-import { profileKeys } from './queries.ts'
+import { profileKeys } from '../../hooks/auth/useProfile.ts'
 import { useAuth } from './useAuth.ts'
 
 /** The brand side: a tinted card with faint rings, like the reference's "Gain control". */
