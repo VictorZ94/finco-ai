@@ -1,57 +1,44 @@
-import { useState } from 'react'
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import CircularProgress from '@mui/material/CircularProgress'
-import Container from '@mui/material/Container'
-import Snackbar from '@mui/material/Snackbar'
-import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
-import EntryForm from './components/EntryForm.tsx'
-import EntryList from './components/EntryList.tsx'
-import { revealSx } from '../../theme/motion.ts'
-import { useLedgerData } from './useLedgerData.ts'
-import { useLedgerForm } from './useLedgerForm.ts'
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
+import Container from "@mui/material/Container";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import {
+  useAccounts,
+  useTransactions,
+} from "../../hooks/ledger/useLedgerQueries.ts";
+import { revealSx } from "../../theme/motion.ts";
+import EntryForm from "./components/EntryForm.tsx";
+import EntryList from "./components/EntryList.tsx";
 
 export default function LedgerPage() {
-  const { accounts, transactions, isLoading, loadError, reload, save } = useLedgerData()
-  const form = useLedgerForm()
-  const [isSaving, setIsSaving] = useState(false)
-  const [saveErrors, setSaveErrors] = useState<string[] | null>(null)
-  const [savedNumber, setSavedNumber] = useState<string | null>(null)
+  // Both requests start together.
+  const accounts = useAccounts();
+  const transactions = useTransactions();
+  const loadError = accounts.error ?? transactions.error;
 
-  async function handleSubmit() {
-    setIsSaving(true)
-    setSaveErrors(null)
-    try {
-      const created = await save(form.toPayload())
-      setSavedNumber(created.numbering)
-      form.reset()
-    } catch (messages) {
-      setSaveErrors(messages as string[])
-    } finally {
-      setIsSaving(false)
-    }
+  function reload() {
+    if (accounts.isError) void accounts.refetch();
+    if (transactions.isError) void transactions.refetch();
   }
 
   return (
-    <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+    <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
       <Container maxWidth="lg" sx={{ py: 3 }}>
         <Stack spacing={{ xs: 3, sm: 4 }}>
           <Box sx={revealSx(0)}>
             <Typography variant="h2" component="h1" sx={{ mb: 0.75 }}>
               Ledger
             </Typography>
-            <Typography color="text.secondary" sx={{ maxWidth: '62ch' }}>
-              Register a movement as a balanced entry: total debits must equal total credits.
+            <Typography color="text.secondary" sx={{ maxWidth: "62ch" }}>
+              Register a movement as a balanced entry: total debits must equal
+              total credits.
             </Typography>
           </Box>
 
-          {isLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-              <CircularProgress aria-label="Loading ledger" />
-            </Box>
-          ) : loadError ? (
+          {loadError ? (
             <Alert
               severity="error"
               action={
@@ -60,43 +47,30 @@ export default function LedgerPage() {
                 </Button>
               }
             >
-              {loadError.join(' ')}
+              {loadError.messages.join(" ")}
             </Alert>
+          ) : !accounts.data || !transactions.data ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+              <CircularProgress aria-label="Loading ledger" />
+            </Box>
           ) : (
             <>
-              {accounts.length === 0 && (
+              {accounts.data.length === 0 && (
                 <Alert severity="warning">
-                  There are no accounts that can receive movements. Load the chart of accounts first.
+                  There are no accounts that can receive movements. Load the
+                  chart of accounts first.
                 </Alert>
               )}
               <Box sx={revealSx(1)}>
-                <EntryForm
-                  form={form}
-                  accounts={accounts}
-                  isSaving={isSaving}
-                  errors={saveErrors}
-                  onDismissErrors={() => setSaveErrors(null)}
-                  onSubmit={() => void handleSubmit()}
-                />
+                <EntryForm accounts={accounts.data} />
               </Box>
               <Box sx={revealSx(2)}>
-                <EntryList entries={transactions} />
+                <EntryList entries={transactions.data} />
               </Box>
             </>
           )}
         </Stack>
       </Container>
-
-      <Snackbar
-        open={savedNumber !== null}
-        autoHideDuration={4000}
-        onClose={() => setSavedNumber(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert severity="success" variant="filled" onClose={() => setSavedNumber(null)} sx={{ fontWeight: 600 }}>
-          Entry #{savedNumber} saved
-        </Alert>
-      </Snackbar>
     </Box>
-  )
+  );
 }

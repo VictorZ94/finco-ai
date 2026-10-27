@@ -1,42 +1,30 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { onIdTokenChanged } from 'firebase/auth'
 import { auth } from '../../lib/firebase.ts'
-import { AuthContext, type AppUserProfile, type AuthSession } from './authContext.ts'
-import { registerWithBackend } from './authService.ts'
+import { AuthContext, type AuthSession } from './authContext.ts'
 
-/** Tracks the Firebase session (persisted by the SDK across reloads) and the backend profile. */
+/** Tracks the Firebase session (persisted by the SDK across reloads). The profile is a query: see useProfile. */
 export default function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const [session, setSession] = useState<AuthSession>(() =>
     auth ? { status: 'loading', user: null } : { status: 'signedOut', user: null },
   )
-  const [profile, setProfile] = useState<AppUserProfile | null>(null)
 
   useEffect(() => {
     if (!auth) return
-    let registeredUid: string | null = null
     // onIdTokenChanged (not onAuthStateChanged) also fires after profile updates that
     // refresh the token, e.g. the display name set right after sign-up.
     return onIdTokenChanged(auth, (user) => {
       if (user) {
         setSession({ status: 'signedIn', user })
-        if (registeredUid !== user.uid) {
-          registeredUid = user.uid
-          // Registers the user with the backend (profile + default chart) and loads their settings.
-          registerWithBackend()
-            .then((me) => {
-              if (registeredUid === user.uid) setProfile(me)
-            })
-            .catch(() => {
-              // Pages load their own data and report errors; nothing to show here.
-            })
-        }
       } else {
-        registeredUid = null
         setSession({ status: 'signedOut', user: null })
-        setProfile(null)
+        // Never show one user's cached data to the next one.
+        queryClient.clear()
       }
     })
-  }, [])
+  }, [queryClient])
 
-  return <AuthContext value={{ ...session, profile }}>{children}</AuthContext>
+  return <AuthContext value={session}>{children}</AuthContext>
 }

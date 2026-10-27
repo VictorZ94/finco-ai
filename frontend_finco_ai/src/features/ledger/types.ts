@@ -6,14 +6,6 @@ export interface Account {
   account_type: string
 }
 
-/** One editable row of the entry form. Amounts are the raw text the user typed. */
-export interface LedgerLine {
-  key: string
-  account: Account | null
-  debit: string
-  credit: string
-}
-
 export interface TransactionLine {
   id: string
   account: string

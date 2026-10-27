@@ -8,6 +8,10 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] })
   ],
+  resolve: {
+    // Resolve the @components/, @lib/ (etc.) aliases from tsconfig.app.json "paths".
+    tsconfigPaths: true,
+  },
   server: {
     // Django runserver; the app calls relative /api/... so no CORS is needed in dev.
     proxy: {

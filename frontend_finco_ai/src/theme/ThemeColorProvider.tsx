@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
-import { saveAccentColor } from '../features/auth/authService.ts'
 import { useAuth } from '../features/auth/useAuth.ts'
+import { useProfile, useSaveAccentColor } from '../hooks/auth/useProfile.ts'
 import { createAppTheme } from './index.ts'
 import { DEFAULT_SEED, HEX_COLOR, scaleFromSeed } from './palette.ts'
 import { ThemeColorContext } from './themeColorContext.ts'
@@ -34,10 +34,12 @@ function storeSeed(seed: string) {
  * The cache avoids a flash of the default color on reload.
  */
 export default function ThemeColorProvider({ children }: { children: ReactNode }) {
-  const { status, profile } = useAuth()
+  const { status } = useAuth()
+  // Loading the profile here also registers a newly signed-in user with the backend.
+  const { data: profile } = useProfile()
+  const saveAccent = useSaveAccentColor()
   const [choice, setChoice] = useState<string | null>(null)
   const [stored] = useState(readStoredSeed)
-  const [saveError, setSaveError] = useState<string | null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => () => {
@@ -52,29 +54,27 @@ export default function ThemeColorProvider({ children }: { children: ReactNode }
     if (profileSeed) storeSeed(profileSeed)
   }, [profileSeed])
 
-  const theme = useMemo(() => createAppTheme(scaleFromSeed(seed)), [seed])
+  // The React Compiler memoizes the theme and the context value; no useMemo needed.
+  const theme = createAppTheme(scaleFromSeed(seed))
 
-  const value = useMemo(
-    () => ({
-      seed,
-      saveError,
-      setSeed(next: string) {
-        const normalized = next.toUpperCase()
-        setChoice(normalized)
-        storeSeed(normalized)
-        setSaveError(null)
-        if (status === 'signedIn') {
-          if (saveTimer.current) clearTimeout(saveTimer.current)
-          saveTimer.current = setTimeout(() => {
-            saveAccentColor(normalized === DEFAULT_SEED ? '' : normalized).catch(() =>
-              setSaveError('Your color is applied here but could not be saved to your profile.'),
-            )
-          }, SAVE_DELAY_MS)
-        }
-      },
-    }),
-    [seed, saveError, status],
-  )
+  function setSeed(next: string) {
+    const normalized = next.toUpperCase()
+    setChoice(normalized)
+    storeSeed(normalized)
+    saveAccent.reset()
+    if (status === 'signedIn') {
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+      saveTimer.current = setTimeout(() => {
+        saveAccent.mutate(normalized === DEFAULT_SEED ? '' : normalized)
+      }, SAVE_DELAY_MS)
+    }
+  }
+
+  const value = {
+    seed,
+    setSeed,
+    saveError: saveAccent.isError ? 'Your color is applied here but could not be saved to your profile.' : null,
+  }
 
   return (
     <ThemeColorContext value={value}>

@@ -1,4 +1,7 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useForm, type Resolver } from 'react-hook-form'
 import { Navigate, useLocation } from 'react-router'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
@@ -8,10 +11,10 @@ import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
-import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import GoogleIcon from '@mui/icons-material/Google'
-import Wordmark from '../../components/Wordmark.tsx'
+import FormTextField from '@components/FormTextField.tsx'
+import Wordmark from '@components/Wordmark.tsx'
 import { isFirebaseConfigured } from '../../lib/firebase.ts'
 import { revealSx } from '../../theme/motion.ts'
 import { concentricRings } from '../../theme/patterns.ts'
@@ -24,9 +27,9 @@ import {
   signInWithGoogle,
   signUpWithEmail,
 } from './authService.ts'
+import { signInSchema, signUpSchema, type AuthMode, type Credentials, type CredentialsInput } from './authSchemas.ts'
+import { profileKeys } from '../../hooks/auth/useProfile.ts'
 import { useAuth } from './useAuth.ts'
-
-type Mode = 'signIn' | 'signUp'
 
 /** The brand side: a tinted card with faint rings, like the reference's "Gain control". */
 function BrandPanel() {
@@ -69,51 +72,60 @@ function BrandPanel() {
 export default function LoginPage() {
   const { status } = useAuth()
   const location = useLocation()
-  const [mode, setMode] = useState<Mode>('signIn')
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isBusy, setIsBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  const queryClient = useQueryClient()
+  const [mode, setMode] = useState<AuthMode>('signIn')
+  const isSignUp = mode === 'signUp'
+
+  // One form for both tabs (the typed email survives a tab switch); the schema follows the active tab.
+  const resolver: Resolver<CredentialsInput, unknown, Credentials> = (values, context, options) =>
+    zodResolver(isSignUp ? signUpSchema : signInSchema)(values, context, options)
+  const { control, handleSubmit, trigger, getValues, setError, clearErrors, formState } = useForm<
+    CredentialsInput,
+    unknown,
+    Credentials
+  >({ resolver, defaultValues: { name: '', email: '', password: '' } })
+  const { errors, isSubmitting } = formState
+
+  // Not form submits: their pending/error state comes from mutations. Errors are Firebase's, not ApiError.
+  const google = useMutation<void, unknown>({ mutationFn: signInWithGoogle })
+  const reset = useMutation<void, unknown, string>({ mutationFn: sendPasswordReset })
 
   if (status === 'signedIn') {
     const from = (location.state as { from?: string } | null)?.from
     return <Navigate to={from && from !== '/login' ? from : '/dashboard'} replace />
   }
 
-  async function run(action: () => Promise<void>) {
-    setIsBusy(true)
-    setError(null)
-    setNotice(null)
+  function clearMessages() {
+    clearErrors()
+    google.reset()
+    reset.reset()
+  }
+
+  const onSubmit = handleSubmit(async ({ name, email, password }) => {
+    google.reset()
+    reset.reset()
     try {
-      await action()
+      if (isSignUp) {
+        await signUpWithEmail(name, email, password)
+        // The profile was fetched before the name was set; load it again with the new name.
+        await queryClient.invalidateQueries({ queryKey: profileKeys.all })
+      } else {
+        await signInWithEmail(email, password)
+      }
     } catch (err) {
-      setError(friendlyAuthError(err))
-    } finally {
-      setIsBusy(false)
+      setError('root', { message: friendlyAuthError(err) })
     }
+  })
+
+  async function handleForgotPassword() {
+    clearMessages()
+    if (await trigger('email')) reset.mutate(getValues('email').trim())
   }
 
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault()
-    void run(() =>
-      mode === 'signIn' ? signInWithEmail(email, password) : signUpWithEmail(name, email, password),
-    )
-  }
-
-  function handleForgotPassword() {
-    if (!email.trim()) {
-      setError('Enter your email first, then choose "Forgot password?".')
-      return
-    }
-    void run(async () => {
-      await sendPasswordReset(email)
-      setNotice(`If an account exists for ${email.trim()}, a reset link is on its way.`)
-    })
-  }
-
-  const isSignUp = mode === 'signUp'
+  // Only one message at a time: the latest action's.
+  const error = errors.root?.message ?? (google.isError ? friendlyAuthError(google.error) : null) ??
+    (reset.isError ? friendlyAuthError(reset.error) : null)
+  const isBusy = isSubmitting || google.isPending || reset.isPending
 
   return (
     <Box
@@ -145,10 +157,9 @@ export default function LoginPage() {
 
           <Tabs
             value={mode}
-            onChange={(_, value: Mode) => {
+            onChange={(_, value: AuthMode) => {
               setMode(value)
-              setError(null)
-              setNotice(null)
+              clearMessages()
             }}
             sx={{ mb: 3, borderBottom: 1, borderColor: 'brand.100' }}
           >
@@ -156,44 +167,32 @@ export default function LoginPage() {
             <Tab label="Create account" value="signUp" />
           </Tabs>
 
-          <Stack component="form" spacing={2} onSubmit={handleSubmit}>
-            {isSignUp && (
-              <TextField
-                label="Name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                autoComplete="name"
-              />
-            )}
-            <TextField
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
-              required
-            />
-            <TextField
+          <Stack component="form" spacing={2} onSubmit={onSubmit} noValidate>
+            {isSignUp && <FormTextField control={control} name="name" label="Name" autoComplete="name" />}
+            <FormTextField control={control} name="email" label="Email" type="email" autoComplete="email" required />
+            <FormTextField
+              control={control}
+              name="password"
               label="Password"
               type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
               autoComplete={isSignUp ? 'new-password' : 'current-password'}
               helperText={isSignUp ? 'At least 6 characters.' : undefined}
               required
             />
             {!isSignUp && (
               <Box sx={{ textAlign: 'right', mt: '-4px !important' }}>
-                <Link component="button" type="button" variant="body2" onClick={handleForgotPassword}>
+                <Link component="button" type="button" variant="body2" onClick={() => void handleForgotPassword()}>
                   Forgot password?
                 </Link>
               </Box>
             )}
 
             {error && <Alert severity="error">{error}</Alert>}
-            {notice && <Alert severity="success">{notice}</Alert>}
+            {reset.isSuccess && (
+              <Alert severity="success">If an account exists for {reset.variables}, a reset link is on its way.</Alert>
+            )}
 
-            <Button type="submit" variant="contained" size="large" loading={isBusy} disabled={!isFirebaseConfigured}>
+            <Button type="submit" variant="contained" size="large" loading={isSubmitting} disabled={isBusy || !isFirebaseConfigured}>
               {isSignUp ? 'Create account' : 'Sign in'}
             </Button>
           </Stack>
@@ -205,7 +204,10 @@ export default function LoginPage() {
             size="large"
             fullWidth
             startIcon={<GoogleIcon />}
-            onClick={() => void run(signInWithGoogle)}
+            onClick={() => {
+              clearMessages()
+              google.mutate()
+            }}
             disabled={isBusy || !isFirebaseConfigured}
           >
             Continue with Google

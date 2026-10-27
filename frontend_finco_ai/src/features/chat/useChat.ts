@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { sendMessage } from './chatService.ts'
 import type { ChatMessage, Role } from './types.ts'
 
@@ -7,28 +8,25 @@ function createMessage(role: Role, content: string): ChatMessage {
 }
 
 export function useChat() {
+  // The conversation is local (not persisted yet); the request state comes from the mutation.
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [isSending, setIsSending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const reply = useMutation({
+    mutationFn: ({ history, content }: { history: ChatMessage[]; content: string }) => sendMessage(history, content),
+    onSuccess: (text) => setMessages((prev) => [...prev, createMessage('assistant', text)]),
+  })
 
-  async function send(text: string) {
+  function send(text: string) {
     const content = text.trim()
-    if (!content || isSending) return
-
-    const history = messages
+    if (!content || reply.isPending) return
     setMessages((prev) => [...prev, createMessage('user', content)])
-    setIsSending(true)
-    setError(null)
-
-    try {
-      const reply = await sendMessage(history, content)
-      setMessages((prev) => [...prev, createMessage('assistant', reply)])
-    } catch {
-      setError('The assistant could not respond. Please try again.')
-    } finally {
-      setIsSending(false)
-    }
+    reply.mutate({ history: messages, content })
   }
 
-  return { messages, isSending, error, send, clearError: () => setError(null) }
+  return {
+    messages,
+    isSending: reply.isPending,
+    error: reply.isError ? 'The assistant could not respond. Please try again.' : null,
+    send,
+    clearError: reply.reset,
+  }
 }

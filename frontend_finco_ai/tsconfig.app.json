@@ -16,6 +16,16 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Path aliases (Vite reads these via resolve.tsconfigPaths) */
+    "paths": {
+      "@components/*": ["./src/components/*"],
+      "@features/*": ["./src/features/*"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@layouts/*": ["./src/layouts/*"],
+      "@lib/*": ["./src/lib/*"],
+      "@theme/*": ["./src/theme/*"]
+    },
+
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,

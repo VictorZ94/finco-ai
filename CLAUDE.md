@@ -31,32 +31,38 @@ Frontend (run from `frontend_finco_ai/`):
 npm run dev       # Vite dev server
 npm run build     # tsc -b && vite build (type-check + bundle)
 npm run lint      # eslint .
-npm run test      # vitest: palette contrast suite (src/theme/palette.test.ts)
+npm run test      # vitest: palette contrast, money/months helpers, form schemas, API error mapping
 ```
 
 Frontend unit tests use Vitest (pure logic only, no component tests yet). Check UI changes in the browser with the playwright-cli skill against `npm run dev`.
 
 ## Frontend architecture
 
-- `src/main.tsx` sets up the providers: MUI `ThemeProvider` (theme in `src/theme/index.ts`) → `CssBaseline` → `AuthProvider` → `RouterProvider`. There is no `App.tsx` and no global CSS; style with MUI `sx`.
+- `src/main.tsx` sets up the providers: `QueryClientProvider` (`src/lib/queryClient.ts`) → `AuthProvider` → `ThemeColorProvider` (MUI `ThemeProvider` + `CssBaseline`, theme from `src/theme/index.ts`) → `RouterProvider`. There is no `App.tsx` and no global CSS; style with MUI `sx`.
 - `src/router.tsx` uses data-mode routing (`createBrowserRouter`, imported from `react-router`, not `react-router-dom`). Every page is a child of `src/layouts/AppLayout.tsx`, which has the AppBar with the `NavLink` buttons and an `<Outlet/>`. Add new pages to both the router and `NAV_ITEMS`. `/`, unknown paths and the post-login default go to `/dashboard` (home).
-- The code is organized by feature: `src/features/<feature>/` holds the page, a hook that owns its state, a `*Service.ts` for I/O, `types.ts` and `components/`.
+- The code is organized by feature: `src/features/<feature>/` holds the page, `components/`, `types.ts`, schemas and UI-state hooks. Data access works like this (see `docs/07-frontend-refactor.md` and `docs/08-hooks-data-layer.md`):
+  - **Server state lives in `src/hooks/<feature>/`** (`hooks/dashboard/useDashboardSummary.ts`, `hooks/ledger/useLedgerQueries.ts`, `hooks/auth/useProfile.ts`; see `docs/08-hooks-data-layer.md`). Each hook calls `useQuery`/`useMutation` with an inline `queryFn`/`mutationFn` that uses the shared axios instance `api` from `src/lib/apiClient.ts` (`baseURL: '/api'`) and returns `.data`. URLs come from `src/lib/endpoints.ts`; use `params` for query strings. The hook file also exports its query keys (`dashboardKeys`, `ledgerKeys`, `profileKeys`), so other hooks can update or invalidate them. Never call `fetch`/`axios` anywhere else, and components only use these hooks. Errors are typed as `ApiError` (registered in `queryClient.ts`), so show `error.messages`.
+  - `*Service.ts` files that remain wrap non-HTTP I/O: `authService.ts` (the Firebase SDK) and `chatService.ts` (the mock).
+  - **Mutations update the cache** instead of refetching everything: creating an entry prepends it to `['transactions']` and invalidates `['dashboard']`.
+  - **Forms use react-hook-form + zod.** The schema lives next to the feature (`entrySchema.ts`, `authSchemas.ts`) with a Vitest file. Use `src/components/FormTextField.tsx` (a controlled `useController` TextField) or `Controller`, **not `register`**: with the React Compiler, `register()` props are memoized, so `reset(values)` doesn't update uncontrolled inputs. Watch values for live UI (totals, hints) in small child components with `useWatch({ compute })`.
 - **Auth** (`src/features/auth/`, `src/lib/`):
-  - `AuthProvider` tracks the Firebase session with `onIdTokenChanged` (so profile changes such as the sign-up name show up) and calls `GET /api/me/` once per uid after sign-in. `useAuth()` returns `{ status: 'loading' | 'signedIn' | 'signedOut', user, profile }`, where `profile` is the `/api/me/` response, including `accent_color`.
+  - `AuthProvider` tracks only the Firebase session, with `onIdTokenChanged` (so profile changes such as the sign-up name show up). `useAuth()` returns `{ status: 'loading' | 'signedIn' | 'signedOut', user }`. On sign-out it calls `queryClient.clear()`, so the next user never sees cached data.
+  - The backend profile is a query: `useProfile()` (key `['me', uid]`, `GET /api/me/`). `ThemeColorProvider` always reads it, so the first fetch after sign-in registers the user and seeds their chart. `useSaveAccentColor()` PATCHes the color and writes the result into the cache.
   - `RequireAuth` guards every route except `/login`.
-  - `LoginPage` offers email sign-in and sign-up, Google, and password reset. Firebase errors are mapped to messages in `authService.friendlyAuthError`.
-  - **All API calls go through `src/lib/apiClient.ts` `apiFetch`**: it adds `Authorization: Bearer <ID token>`, signs out on a 401, and throws `ApiError` with flattened DRF messages.
+  - `LoginPage` offers email sign-in and sign-up, Google, and password reset. One form serves both tabs (the resolver switches between `signInSchema` and `signUpSchema`), so the typed email survives a tab switch. Firebase errors are mapped by `authService.friendlyAuthError` into `setError('root')`; Google sign-in and the reset email are mutations.
+  - **All API calls go through `src/lib/apiClient.ts` `api`** (axios): a request interceptor adds `Authorization: Bearer <ID token>`; a response interceptor signs out on a 401 and turns every failure into `ApiError` with flattened DRF messages (`toApiError`, tested).
   - `src/lib/firebase.ts` exports `auth = null` when the `VITE_FIREBASE_*` values are missing.
-- **Dashboard (`/dashboard`, home)**: `useDashboard(month)` loads `GET /api/dashboard/summary/?month=YYYY-MM`.
+- **Dashboard (`/dashboard`, home)**: `useDashboardSummary(month)` loads `GET /api/dashboard/summary/?month=YYYY-MM` with `placeholderData: keepPreviousData`; the page dims the previous month while `isPlaceholderData`.
   - It shows the key figures (`KeyFigures`) and a 6-month `IncomeExpenseChart` (`@mui/x-charts` `BarChart`). Chart colors come from `useBrand()`: income in 400, expenses in 700.
   - `MonthSelector` can't go past the current month. Month helpers live in `features/dashboard/months.ts`, with English month names.
 - **Shared helpers** live in `src/lib/`:
   - `money.ts`: integer cents. Use `toCents` for user input and `apiToCents` for signed API strings; `formatCents`, `formatApiAmount` and `formatCompact` format them.
   - `dates.ts`: local-time dates.
-  - `apiClient.ts` and `firebase.ts`.
-- **Chat (`/chat`)**: `useChat` owns the message state. `chatService.sendMessage()` is currently a **mock** (a delay plus an echo) and is the one place to connect the backend. Messages are not persisted.
-- **Ledger (`/ledger`)**: a manual journal-entry form plus the list of saved entries. It uses the real API through `ledgerService.ts` (`apiFetch`).
-  - `useLedgerForm` owns the form state and enforces debit XOR credit per line and balanced totals.
+  - `apiClient.ts`, `queryClient.ts` and `firebase.ts`.
+- **Chat (`/chat`)**: `useChat` keeps the messages in local state and sends through a `useMutation`. `chatService.sendMessage()` is currently a **mock** (a delay plus an echo). When the `ai_chat` API exists, replace it with a `hooks/chat/` mutation and an `endpoints.chat` entry. Messages are not persisted.
+- **Ledger (`/ledger`)**: a manual journal-entry form plus the list of saved entries. `LedgerPage` loads accounts and entries with `useAccounts()`/`useTransactions()`; `EntryForm` is self-contained (`useEntryForm()` + `useCreateTransaction()`).
+  - `entrySchema.ts` holds the rules (debit XOR credit per line, at least 2 lines, balanced totals) in one `superRefine` (zod skips an object's refinements once a field fails), and its `.transform` outputs the API payload, so `handleSubmit` receives a `NewTransaction`. The hint next to Save is `firstProblem(values)`.
+  - `useFieldArray` provides the line keys. The debit/credit lock disables the TextField, not the `Controller`, so the value stays registered.
   - Money is handled as **integer cents** (`src/lib/money.ts`), never floats, and sent to the API as decimal strings. Dates are built in local time (`src/lib/dates.ts`), not UTC.
   - The lines render as a table on `sm` screens and up, and as stacked cards on phones.
 
@@ -65,7 +71,7 @@ Visual design: professional, monochrome, user-selectable color (details in `docs
   - Components use `'brand.N'` in `sx`, `useBrand()` (`src/theme/useBrand.ts`) for SVG, borders and shadows, and `cardSx(brand)` for white cards.
   - **Never hardcode brand hex values** or import a static scale. The only fixed color is `danger` in `tokens.ts`, for errors and an unbalanced difference; "Balanced" and info stay in the brand hue.
 - **Contrast is guaranteed** by `src/theme/palette.ts`: `buildScale` keeps the reference lightness, and a guard enforces the `CONTRAST_RULES`. If you add a new color pairing (fg on bg), add it to `CONTRAST_RULES`, and `palette.test.ts` will check every preset and hue.
-- **The user's choice:** UserMenu → Appearance (`features/appearance/`), held by `ThemeColorProvider` (priority: session choice > `profile.accent_color` > `localStorage` > default Slate). It is saved via `PATCH /api/me/` (debounced).
+- **The user's choice:** UserMenu → Appearance (`features/appearance/`), held by `ThemeColorProvider` (priority: session choice > `useProfile().data.accent_color` > `localStorage` > default Slate). It is saved via `useSaveAccentColor()` (`PATCH /api/me/`, debounced 600 ms).
 - **Type:** Geist. **Every amount and account code uses the `money` variant** (or `fontVariantNumeric: 'tabular-nums'` in inputs and table cells). No all-caps.
 - **Shape:** white cards with radius 24, controls 12, pills 999 (`radius`). Concentric rings (`patterns.ts`) only on tinted panels (login, chat empty state).
 - **Motion:** quiet. `revealSx(i)` once per page; reduced motion is handled globally. The ripple is off, and focus is a 2px brand-400 outline.
@@ -76,7 +82,8 @@ MUI v9 / theming gotchas:
 - A numeric `borderRadius` in `sx` is multiplied by `theme.shape.borderRadius` (12), so use px strings, or `radius.*` from `tokens.ts`.
 - Inside flex rows, give shrinking children `minWidth: 0`. The routed-page layer in `AppLayout`, and amount inputs on phones, overflowed without it.
 - Lint rules: component files may only export components (react-refresh), and `verbatimModuleSyntax` requires `import type` for type-only imports.
-- `react-hooks/set-state-in-effect` rejects effects that call a function which sets state synchronously. For data loading, set state only inside the promise callbacks (see `useLedgerData`).
+- `react-hooks/set-state-in-effect` rejects effects that call a function which sets state synchronously. Load data with TanStack Query, not effects.
+- The React Compiler memoizes everything: don't add `useMemo`/`useCallback`, and don't rely on a callback ref re-running on each render (see the `register` note above).
 - Icon modules use `…Outlined` names (`DeleteOutlined`, `ErrorOutlined`); `…Outline` doesn't exist.
 - In a `tableLayout: 'fixed'` table, a `padding="checkbox"` cell ignores its `width`, so use a plain cell with `px`.
 
