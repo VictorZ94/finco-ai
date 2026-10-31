@@ -8,6 +8,7 @@ import { api } from "../../lib/apiClient.ts";
 import { endpoints } from "../../lib/endpoints.ts";
 import { accountKeys } from "../accounts/useChartBalances.ts";
 import { dashboardKeys } from "../dashboard/useDashboardSummary.ts";
+import { reportKeys } from "../reports/useReports.ts";
 
 export const ledgerKeys = {
   postableAccounts: ["accounts", "postable"] as const,
@@ -38,7 +39,7 @@ export function useTransactions() {
   });
 }
 
-/** Saves an entry; the list shows it at once and the dashboard and PUC refetch on their next visit. */
+/** Saves an entry; the list shows it at once and the dashboard, PUC and reports refetch on their next visit. */
 export function useCreateTransaction() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -56,6 +57,7 @@ export function useCreateTransaction() {
       );
       void queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
       void queryClient.invalidateQueries({ queryKey: accountKeys.balancesAll });
+      void queryClient.invalidateQueries({ queryKey: reportKeys.all });
     },
   });
 }

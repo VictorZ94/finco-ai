@@ -5,6 +5,7 @@ import ButtonBase from '@mui/material/ButtonBase'
 import Toolbar from '@mui/material/Toolbar'
 import ChatIcon from '@mui/icons-material/ChatOutlined'
 import AccountTreeIcon from '@mui/icons-material/AccountTreeOutlined'
+import AssessmentIcon from '@mui/icons-material/AssessmentOutlined'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLongOutlined'
 import DashboardIcon from '@mui/icons-material/SpaceDashboardOutlined'
 import Wordmark from '../components/Wordmark.tsx'
@@ -15,12 +16,14 @@ const NAV_ITEMS = [
   { to: '/chat', label: 'Chat', icon: <ChatIcon fontSize="small" /> },
   { to: '/ledger', label: 'Ledger', icon: <ReceiptLongIcon fontSize="small" /> },
   { to: '/puc', label: 'PUC', icon: <AccountTreeIcon fontSize="small" /> },
+  { to: '/reports', label: 'Reports', icon: <AssessmentIcon fontSize="small" /> },
 ]
 
 export default function AppLayout() {
   return (
-    <Box sx={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      <AppBar position="static">
+    // On paper the fixed-height shell lets the page grow, so long reports print in full.
+    <Box sx={{ height: '100dvh', display: 'flex', flexDirection: 'column', '@media print': { height: 'auto', display: 'block' } }}>
+      <AppBar position="static" sx={{ displayPrint: 'none' }}>
         <Toolbar sx={{ gap: { xs: 1.5, sm: 5 }, minHeight: { xs: 60, sm: 64 }, px: { xs: 2, sm: 3 } }}>
           <Box sx={{ flexGrow: { xs: 1, sm: 0 } }}>
             <Wordmark />
@@ -71,7 +74,7 @@ export default function AppLayout() {
           <UserMenu />
         </Toolbar>
       </AppBar>
-      <Box component="main" sx={{ flex: 1, minHeight: 0, minWidth: 0, display: 'flex' }}>
+      <Box component="main" sx={{ flex: 1, minHeight: 0, minWidth: 0, display: 'flex', '@media print': { display: 'block' } }}>
         <Outlet />
       </Box>
     </Box>

@@ -6,6 +6,12 @@ export const endpoints = {
   accountBalances: (month: string) => `/accounts/balances/?month=${month}`,
   transactions: "/transactions/",
   me: "/me/",
+  reports: {
+    incomeStatement: "/reports/income-statement/",
+    balanceSheet: "/reports/balance-sheet/",
+    journal: "/reports/journal/",
+    generalLedger: "/reports/general-ledger/",
+  },
   chat: {
     conversations: "/chat/conversations/",
     messages: (conversationId: string) => `/chat/conversations/${conversationId}/messages/`,

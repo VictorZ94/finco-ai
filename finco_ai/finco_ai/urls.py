@@ -28,4 +28,5 @@ urlpatterns = [
     path('api/', include('transactions.urls')),
     path('api/', include('dashboard.urls')),
     path('api/', include('ai_chat.urls')),
+    path('api/', include('reports.urls')),
 ]

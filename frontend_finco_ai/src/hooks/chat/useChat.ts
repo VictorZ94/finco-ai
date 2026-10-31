@@ -10,6 +10,7 @@ import { endpoints } from "../../lib/endpoints.ts";
 import { accountKeys } from "../accounts/useChartBalances.ts";
 import { dashboardKeys } from "../dashboard/useDashboardSummary.ts";
 import { ledgerKeys } from "../ledger/useLedgerQueries.ts";
+import { reportKeys } from "../reports/useReports.ts";
 
 export const chatKeys = {
   conversations: ["chat", "conversations"] as const,
@@ -64,6 +65,7 @@ function applyTurn(queryClient: QueryClient, conversationId: string, turn: TurnR
     void queryClient.invalidateQueries({ queryKey: ledgerKeys.transactions });
     void queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     void queryClient.invalidateQueries({ queryKey: accountKeys.balancesAll });
+    void queryClient.invalidateQueries({ queryKey: reportKeys.all });
   }
 }
 

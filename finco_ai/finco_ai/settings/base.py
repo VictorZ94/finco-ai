@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'transactions',
     'ai_chat',
     'dashboard',
+    'reports',
     'users',
 ]
 
