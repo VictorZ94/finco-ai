@@ -6,6 +6,7 @@ import type {
 } from "../../features/ledger/types.ts";
 import { api } from "../../lib/apiClient.ts";
 import { endpoints } from "../../lib/endpoints.ts";
+import { accountKeys } from "../accounts/useChartBalances.ts";
 import { dashboardKeys } from "../dashboard/useDashboardSummary.ts";
 
 export const ledgerKeys = {
@@ -37,7 +38,7 @@ export function useTransactions() {
   });
 }
 
-/** Saves an entry; the list shows it at once and the dashboard refetches on its next visit. */
+/** Saves an entry; the list shows it at once and the dashboard and PUC refetch on their next visit. */
 export function useCreateTransaction() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -54,6 +55,7 @@ export function useCreateTransaction() {
         (prev) => [created, ...(prev ?? [])],
       );
       void queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+      void queryClient.invalidateQueries({ queryKey: accountKeys.balancesAll });
     },
   });
 }

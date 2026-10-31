@@ -7,6 +7,7 @@ import type {
 import { api } from "../../lib/apiClient.ts";
 import { todayIso } from "../../lib/dates.ts";
 import { endpoints } from "../../lib/endpoints.ts";
+import { accountKeys } from "../accounts/useChartBalances.ts";
 import { dashboardKeys } from "../dashboard/useDashboardSummary.ts";
 import { ledgerKeys } from "../ledger/useLedgerQueries.ts";
 
@@ -62,6 +63,7 @@ function applyTurn(queryClient: QueryClient, conversationId: string, turn: TurnR
   if (turn.transaction) {
     void queryClient.invalidateQueries({ queryKey: ledgerKeys.transactions });
     void queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+    void queryClient.invalidateQueries({ queryKey: accountKeys.balancesAll });
   }
 }
 
@@ -125,7 +127,8 @@ export function useAnswerProposal() {
         ),
       );
       applyTurn(queryClient, conversationId, turn);
-      if (accept) void queryClient.invalidateQueries({ queryKey: ledgerKeys.postableAccounts });
+      // The new account shows up in the ledger picker and the PUC.
+      if (accept) void queryClient.invalidateQueries({ queryKey: accountKeys.all });
     },
   });
 }

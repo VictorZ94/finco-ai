@@ -40,7 +40,7 @@ class ChatContext:
     today: date
     postable: list  # the user's accounts that can receive movements, by code
     groups: list  # level-3 accounts where a new sub-account can go
-    next_codes: dict  # group code -> the code a new sub-account would get
+    next_codes: dict  # group code -> the code a new sub-account would get (None when the group is full)
     children: dict  # group code -> {lowercased name: code} of its sub-accounts
     user_text: str  # everything the user wrote in this conversation: the only valid evidence
     pending_account: dict | None
@@ -48,6 +48,13 @@ class ChatContext:
 
     def postable_by_code(self):
         return {account.code: account for account in self.postable}
+
+
+def _next_code(group, accounts):
+    try:
+        return child_code(group.code, [a.code for a in accounts if a.parent_id == group.pk])
+    except ValueError:  # all 99 slots taken
+        return None
 
 
 def load_context(conversation: Conversation, today: date) -> ChatContext:
@@ -61,9 +68,7 @@ def load_context(conversation: Conversation, today: date) -> ChatContext:
         group.code: {a.name.strip().lower(): a.code for a in accounts if a.parent_id == group.pk} for group in groups
     }
     # From every child's code (names may repeat, e.g. two "CDT Bancolombia" under 1225).
-    next_codes = {
-        group.code: child_code(group.code, [a.code for a in accounts if a.parent_id == group.pk]) for group in groups
-    }
+    next_codes = {group.code: _next_code(group, accounts) for group in groups}
     user_text = "\n".join(
         conversation.messages.filter(role=Message.Role.USER).order_by("created_at").values_list("content", flat=True)
     )

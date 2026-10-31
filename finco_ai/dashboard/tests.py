@@ -44,9 +44,9 @@ class DashboardSummaryTests(FirebaseAuthMixin, APITestCase):
         self.assertEqual(len(data["trend"]), 6)
 
     def test_month_figures_and_previous_month(self):
-        post_entry(USER, date(2026, 10, 1), "1110-10", "4135-05", "3000000")  # salary to Bancolombia
-        post_entry(USER, date(2026, 10, 15), "5125-01", "2105-02", "50000")  # lunch on Nubank card
-        post_entry(USER, date(2026, 9, 20), "5125-01", "2105-02", "80000")  # last month's lunch
+        post_entry(USER, date(2026, 10, 1), "111010", "413505", "3000000")  # salary to Bancolombia
+        post_entry(USER, date(2026, 10, 15), "512501", "210502", "50000")  # lunch on Nubank card
+        post_entry(USER, date(2026, 9, 20), "512501", "210502", "80000")  # last month's lunch
 
         data = self.summary("2026-10")
 
@@ -56,9 +56,9 @@ class DashboardSummaryTests(FirebaseAuthMixin, APITestCase):
         self.assertEqual(data["previous"], {"month": "2026-09", "income": "0.00", "expenses": "80000.00"})
 
     def test_net_worth_is_balance_as_of_month_end(self):
-        post_entry(USER, date(2026, 9, 1), "1110-10", "4135-05", "1000000")
-        post_entry(USER, date(2026, 10, 5), "5125-01", "2105-02", "130000")
-        post_entry(USER, date(2026, 11, 1), "1110-10", "4135-05", "999999")  # after October: excluded
+        post_entry(USER, date(2026, 9, 1), "111010", "413505", "1000000")
+        post_entry(USER, date(2026, 10, 5), "512501", "210502", "130000")
+        post_entry(USER, date(2026, 11, 1), "111010", "413505", "999999")  # after October: excluded
 
         data = self.summary("2026-10")
 
@@ -68,9 +68,9 @@ class DashboardSummaryTests(FirebaseAuthMixin, APITestCase):
         self.assertEqual(self.summary("2026-09")["net_worth"], "1000000.00")
 
     def test_paying_a_card_moves_balances_but_is_not_an_expense(self):
-        post_entry(USER, date(2026, 10, 1), "1110-10", "4135-05", "500000")
-        post_entry(USER, date(2026, 10, 2), "5125-01", "2105-02", "100000")
-        post_entry(USER, date(2026, 10, 3), "2105-02", "1110-10", "100000")  # pay the card from the bank
+        post_entry(USER, date(2026, 10, 1), "111010", "413505", "500000")
+        post_entry(USER, date(2026, 10, 2), "512501", "210502", "100000")
+        post_entry(USER, date(2026, 10, 3), "210502", "111010", "100000")  # pay the card from the bank
 
         data = self.summary("2026-10")
 
@@ -79,9 +79,9 @@ class DashboardSummaryTests(FirebaseAuthMixin, APITestCase):
         self.assertEqual(data["net_worth"], "400000.00")
 
     def test_trend_covers_six_months_in_order_with_gaps_filled(self):
-        post_entry(USER, date(2026, 5, 10), "1110-10", "4135-05", "100")
-        post_entry(USER, date(2026, 8, 10), "5125-01", "1105-05", "40")
-        post_entry(USER, date(2026, 4, 30), "1110-10", "4135-05", "999")  # before the window
+        post_entry(USER, date(2026, 5, 10), "111010", "413505", "100")
+        post_entry(USER, date(2026, 8, 10), "512501", "110505", "40")
+        post_entry(USER, date(2026, 4, 30), "111010", "413505", "999")  # before the window
 
         trend = self.summary("2026-10")["trend"]
 
@@ -91,7 +91,7 @@ class DashboardSummaryTests(FirebaseAuthMixin, APITestCase):
         self.assertEqual(trend[3]["expenses"], "40.00")
 
     def test_trend_crosses_year_boundary(self):
-        post_entry(USER, date(2025, 11, 3), "5125-01", "1105-05", "70")
+        post_entry(USER, date(2025, 11, 3), "512501", "110505", "70")
 
         trend = self.summary("2026-02")["trend"]
 
@@ -100,14 +100,14 @@ class DashboardSummaryTests(FirebaseAuthMixin, APITestCase):
 
     def test_uses_applied_date_not_created_at(self):
         # Created today, but applied to an earlier month.
-        post_entry(USER, date(2025, 3, 15), "5125-01", "1105-05", "25000")
+        post_entry(USER, date(2025, 3, 15), "512501", "110505", "25000")
 
         self.assertEqual(self.summary("2025-03")["expenses"], "25000.00")
         self.assertEqual(self.summary("2026-10")["expenses"], "0.00")
 
     def test_excludes_other_users(self):
         seed_default_chart(OTHER)
-        post_entry(OTHER, date(2026, 10, 1), "1110-10", "4135-05", "777")
+        post_entry(OTHER, date(2026, 10, 1), "111010", "413505", "777")
 
         data = self.summary("2026-10")
 

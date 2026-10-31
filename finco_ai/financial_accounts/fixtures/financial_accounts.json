@@ -51,7 +51,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000110505",
     "fields": {
-      "code": "1105-05",
+      "code": "110505",
       "name": "Efectivo en Bolsillo",
       "nature": "DEBIT",
       "level": 4,
@@ -83,7 +83,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000111010",
     "fields": {
-      "code": "1110-10",
+      "code": "111010",
       "name": "Cta de Ahorros Bancolombia",
       "nature": "DEBIT",
       "level": 4,
@@ -99,7 +99,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000111015",
     "fields": {
-      "code": "1110-15",
+      "code": "111015",
       "name": "Cta de Ahorros Nubank",
       "nature": "DEBIT",
       "level": 4,
@@ -147,7 +147,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000122505",
     "fields": {
-      "code": "1225-05",
+      "code": "122505",
       "name": "CDT Bancolombia",
       "nature": "DEBIT",
       "level": 4,
@@ -163,7 +163,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000122510",
     "fields": {
-      "code": "1225-10",
+      "code": "122510",
       "name": "CDT Bancolombia",
       "nature": "DEBIT",
       "level": 4,
@@ -227,7 +227,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000210501",
     "fields": {
-      "code": "2105-01",
+      "code": "210501",
       "name": "Prestamo Bancolombia",
       "nature": "CREDIT",
       "level": 4,
@@ -243,7 +243,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000210502",
     "fields": {
-      "code": "2105-02",
+      "code": "210502",
       "name": "Tarjeta de Crédito Nubank",
       "nature": "CREDIT",
       "level": 4,
@@ -259,7 +259,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000210503",
     "fields": {
-      "code": "2105-03",
+      "code": "210503",
       "name": "Tarjeta de Credito Bco de Occidente",
       "nature": "CREDIT",
       "level": 4,
@@ -307,7 +307,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000230501",
     "fields": {
-      "code": "2305-01",
+      "code": "230501",
       "name": "Cuenta por Pagar",
       "nature": "CREDIT",
       "level": 4,
@@ -371,7 +371,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000310505",
     "fields": {
-      "code": "3105-05",
+      "code": "310505",
       "name": "Capital Autorizado",
       "nature": "CREDIT",
       "level": 4,
@@ -435,7 +435,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000413505",
     "fields": {
-      "code": "4135-05",
+      "code": "413505",
       "name": "Ingresos",
       "nature": "CREDIT",
       "level": 4,
@@ -499,7 +499,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000510501",
     "fields": {
-      "code": "5105-01",
+      "code": "510501",
       "name": "Sueldos",
       "nature": "DEBIT",
       "level": 4,
@@ -531,7 +531,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000512501",
     "fields": {
-      "code": "5125-01",
+      "code": "512501",
       "name": "Alimentación",
       "nature": "DEBIT",
       "level": 4,
@@ -563,7 +563,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000513501",
     "fields": {
-      "code": "5135-01",
+      "code": "513501",
       "name": "Servicios Públicos",
       "nature": "DEBIT",
       "level": 4,
@@ -579,7 +579,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000513502",
     "fields": {
-      "code": "5135-02",
+      "code": "513502",
       "name": "Plan de datos Celular",
       "nature": "DEBIT",
       "level": 4,
@@ -595,7 +595,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000513503",
     "fields": {
-      "code": "5135-03",
+      "code": "513503",
       "name": "Gasolina",
       "nature": "DEBIT",
       "level": 4,
@@ -627,7 +627,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000514001",
     "fields": {
-      "code": "5140-01",
+      "code": "514001",
       "name": "Consulares",
       "nature": "DEBIT",
       "level": 4,
@@ -659,7 +659,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000515501",
     "fields": {
-      "code": "5155-01",
+      "code": "515501",
       "name": "Alojamiento",
       "nature": "DEBIT",
       "level": 4,
@@ -675,7 +675,7 @@
     "model": "financial_accounts.financialaccount",
     "pk": "f1000000-0000-4000-8000-000000515502",
     "fields": {
-      "code": "5155-02",
+      "code": "515502",
       "name": "Tiquetes Aéreos",
       "nature": "DEBIT",
       "level": 4,

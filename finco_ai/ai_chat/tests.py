@@ -114,7 +114,7 @@ class ChatApiTests(FirebaseAuthMixin, APITestCase):
     def test_a_payment_method_the_user_never_named_is_refused(self):
         # The model guesses the Nubank card; the tool refuses and the model asks.
         model = self.use_model(
-            record("expense", "80000", "5135-03", "2105-02", "gasolina", "tarjeta Nubank"),
+            record("expense", "80000", "513503", "210502", "gasolina", "tarjeta Nubank"),
             say("¿Cómo pagaste?"),
         )
 
@@ -129,7 +129,7 @@ class ChatApiTests(FirebaseAuthMixin, APITestCase):
 
     def test_a_category_the_user_never_named_is_refused(self):
         model = self.use_model(
-            record("expense", "50000", "5125-01", "1105-05", "almuerzo", "efectivo"),
+            record("expense", "50000", "512501", "110505", "almuerzo", "efectivo"),
             say("¿En qué fue?"),
         )
 
@@ -141,7 +141,7 @@ class ChatApiTests(FirebaseAuthMixin, APITestCase):
     def test_records_a_complete_expense_as_a_balanced_entry(self):
         self.use_model(
             say("¿Cómo pagaste?"),
-            record("expense", "80000", "5135-03", "2105-02", "gasolina", "nubank", supplier="Terpel",
+            record("expense", "80000", "513503", "210502", "gasolina", "nubank", supplier="Terpel",
                    description="Gasolina en Terpel"),
             say("¡Listo! Guardé la gasolina."),
         )
@@ -154,19 +154,19 @@ class ChatApiTests(FirebaseAuthMixin, APITestCase):
         self.assertEqual((entry.numbering, entry.supplier, str(entry.applied_date)), ("0001", "Terpel", TODAY))
         self.assertEqual(entry.description, "Gasolina en Terpel")
         lines = {line.account.code: (line.debit, line.credit) for line in entry.ledger_entries.select_related("account")}
-        self.assertEqual(lines, {"5135-03": (Decimal("80000"), 0), "2105-02": (0, Decimal("80000"))})
+        self.assertEqual(lines, {"513503": (Decimal("80000"), 0), "210502": (0, Decimal("80000"))})
         reply = Message.objects.get(pk=response.data["messages"][1]["id"])
         self.assertEqual(entry.message, reply)
         self.assertEqual(reply.content, "¡Listo! Guardé la gasolina.")
         self.assertEqual(reply.data["numbering"], "0001")
         self.assertEqual(reply.data["description"], "Gasolina en Terpel")
-        self.assertEqual(reply.data["debit"], {"code": "5135-03", "name": "Gasolina"})
+        self.assertEqual(reply.data["debit"], {"code": "513503", "name": "Gasolina"})
         self.assertEqual(response.data["transaction"]["total_debit"], "80000.00")
 
     def test_only_one_entry_per_turn(self):
         model = self.use_model(
-            record("expense", "80000", "5135-03", "2105-02", "gasolina", "nubank"),
-            record("expense", "80000", "5135-03", "2105-02", "gasolina", "nubank"),
+            record("expense", "80000", "513503", "210502", "gasolina", "nubank"),
+            record("expense", "80000", "513503", "210502", "gasolina", "nubank"),
             say("Guardado."),
         )
 
@@ -177,10 +177,10 @@ class ChatApiTests(FirebaseAuthMixin, APITestCase):
 
     def test_wrong_account_type_and_other_users_accounts_are_refused(self):
         seed_default_chart(OTHER)
-        create_child_account(self.account("5135", OTHER), "Taxi")  # 5135-04 exists only for OTHER
+        create_child_account(self.account("5135", OTHER), "Taxi")  # 513504 exists only for OTHER
         model = self.use_model(
-            record("expense", "100000", "4135-05", "1105-05", "salario", "efectivo"),  # an income account
-            record("expense", "25000", "5135-04", "1105-05", "taxi", "efectivo"),
+            record("expense", "100000", "413505", "110505", "salario", "efectivo"),  # an income account
+            record("expense", "25000", "513504", "110505", "taxi", "efectivo"),
             say("¿Qué cuenta uso?"),
         )
 
@@ -189,7 +189,7 @@ class ChatApiTests(FirebaseAuthMixin, APITestCase):
         self.assertFalse(Transaction.objects.exists())
         first, second = tool_results(model)
         self.assertIn("category must be EXPENSE", first)
-        self.assertIn("'5135-04' is not one of the user's accounts", second)
+        self.assertIn("'513504' is not one of the user's accounts", second)
 
     # --- account proposals ----------------------------------------------------------------------
 
@@ -197,20 +197,20 @@ class ChatApiTests(FirebaseAuthMixin, APITestCase):
         model = self.use_model(
             call("propose_new_account", parent_code="5135", name="Taxi", role="category"),
             say("No tienes cuenta de taxi. ¿La creo?"),
-            record("expense", "25000", "5135-04", "1105-05", "taxi", "efectivo"),
+            record("expense", "25000", "513504", "110505", "taxi", "efectivo"),
             say("Listo, guardé el taxi."),
         )
         response = self.send("Tomé un taxi por 25.000 y pagué en efectivo")
         card = response.data["messages"][1]["data"]
-        self.assertEqual((card["type"], card["code"], card["name"], card["status"]), ("account_proposal", "5135-04", "Taxi", "pending"))
-        self.assertFalse(FinancialAccount.objects.filter(user_id=USER, code="5135-04").exists())
+        self.assertEqual((card["type"], card["code"], card["name"], card["status"]), ("account_proposal", "513504", "Taxi", "pending"))
+        self.assertFalse(FinancialAccount.objects.filter(user_id=USER, code="513504").exists())
 
         response = self.client.post(self.proposal_url, {"accept": True, "today": TODAY}, format="json")
 
         self.assertEqual(response.status_code, 200, response.data)
-        taxi = self.account("5135-04")
+        taxi = self.account("513504")
         self.assertEqual((taxi.level, taxi.account_type, taxi.nature, taxi.can_receive_movement), (4, AccountType.EXPENSE, "DEBIT", True))
-        self.assertEqual(response.data["messages"][0]["content"], "Creé la cuenta 5135-04 Taxi.")
+        self.assertEqual(response.data["messages"][0]["content"], "Creé la cuenta 513504 Taxi.")
         self.assertEqual(response.data["transaction"]["numbering"], "0001")
         self.assertEqual(Message.objects.get(data__type="account_proposal").data["status"], "accepted")
         self.conversation.refresh_from_db()
@@ -230,7 +230,7 @@ class ChatApiTests(FirebaseAuthMixin, APITestCase):
         response = self.client.post(self.proposal_url, {"accept": False}, format="json")
 
         self.assertEqual(response.status_code, 200)
-        self.assertFalse(FinancialAccount.objects.filter(user_id=USER, code="5135-04").exists())
+        self.assertFalse(FinancialAccount.objects.filter(user_id=USER, code="513504").exists())
         self.assertIn("I tapped No", model.calls[-1][-1].content)
         self.assertEqual(Message.objects.get(data__type="account_proposal").data["status"], "declined")
 
@@ -287,7 +287,7 @@ class ChatApiTests(FirebaseAuthMixin, APITestCase):
         system = model.calls[0][0]
         self.assertIsInstance(system, SystemMessage)
         self.assertIn("Today is 2026-10-27.", system.content)
-        self.assertIn("5135-03 | Gasolina | EXPENSE", system.content)
+        self.assertIn("513503 | Gasolina | EXPENSE", system.content)
         self.assertIn("5135 | Servicios | EXPENSE", system.content)
 
     # --- API robustness ---------------------------------------------------------------------------
@@ -310,7 +310,7 @@ class ChatApiTests(FirebaseAuthMixin, APITestCase):
 
     def test_a_retried_request_is_not_run_twice(self):
         model = self.use_model(
-            record("expense", "80000", "5135-03", "2105-02", "gasolina", "nubank"),
+            record("expense", "80000", "513503", "210502", "gasolina", "nubank"),
             say("Guardado."),
         )
         client_id = str(uuid.uuid4())
@@ -355,8 +355,8 @@ class RuleTests(TestCase):
         args = {
             "kind": "expense",
             "amount": "80000",
-            "category_code": "5135-03",
-            "payment_code": "2105-02",
+            "category_code": "513503",
+            "payment_code": "210502",
             "category_evidence": "gasolina",
             "payment_evidence": "Nubank",
             **overrides,
@@ -367,7 +367,7 @@ class RuleTests(TestCase):
         result = self.check(applied_date="2026-10-20", supplier=" Terpel ")
 
         self.assertIsInstance(result, StagedMovement)
-        self.assertEqual((result.category.code, result.payment.code), ("5135-03", "2105-02"))
+        self.assertEqual((result.category.code, result.payment.code), ("513503", "210502"))
         self.assertEqual((result.amount, str(result.applied_date), result.supplier), (Decimal("80000"), "2026-10-20", "Terpel"))
 
     def test_description_falls_back_to_the_users_words(self):
@@ -381,7 +381,7 @@ class RuleTests(TestCase):
             "is not one of the user's accounts": {"category_code": "9999"},
             "not a valid amount": {"amount": "mucho"},
             "never said how they paid": {"payment_evidence": "efectivo"},
-            "cannot be the payment account": {"payment_code": "5135-03"},
+            "cannot be the payment account": {"payment_code": "513503"},
             "applied_date must be": {"applied_date": "ayer"},
         }
         for expected, overrides in cases.items():
@@ -390,7 +390,7 @@ class RuleTests(TestCase):
 
     def test_proposals(self):
         proposal = check_proposal(self.ctx, parent_code="5135", name="Taxi", role="category")
-        self.assertEqual((proposal["code"], proposal["parent_name"]), ("5135-04", "Servicios"))
+        self.assertEqual((proposal["code"], proposal["parent_name"]), ("513504", "Servicios"))
         self.assertIn("already exists", check_proposal(self.ctx, parent_code="5135", name="gasolina", role="category"))
         self.assertIn("not one of the groups", check_proposal(self.ctx, parent_code="51", name="Taxi", role="category"))
         self.assertIn("can't go under", check_proposal(self.ctx, parent_code="5135", name="Daviplata", role="payment"))
@@ -398,9 +398,13 @@ class RuleTests(TestCase):
         self.assertIn("already waiting", check_proposal(self.ctx, parent_code="5155", name="Hotel", role="category"))
 
     def test_next_code_counts_every_sibling(self):
-        # 1225 has two children both named "CDT Bancolombia" (-05 and -10); the next code must follow the highest.
-        self.assertEqual(self.ctx.next_codes["1225"], "1225-11")
-        self.assertEqual(child_code("5135", ["5135-01", "5135-03"]), "5135-04")
+        # 1225 has two children both named "CDT Bancolombia" (122505 and 122510); the next code must follow the highest.
+        self.assertEqual(self.ctx.next_codes["1225"], "122511")
+        self.assertEqual(child_code("5135", ["513501", "513503"]), "513504")
+
+    def test_a_full_group_takes_no_proposals(self):
+        self.ctx.next_codes["5135"] = None  # all 99 slots used
+        self.assertIn("is full", check_proposal(self.ctx, parent_code="5135", name="Taxi", role="category"))
 
 
 class MovementTests(SimpleTestCase):

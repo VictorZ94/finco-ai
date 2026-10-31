@@ -3,6 +3,7 @@ export const endpoints = {
     summary: (month: string) => `/dashboard/summary/?month=${month}`,
   },
   accounts: "/accounts/",
+  accountBalances: (month: string) => `/accounts/balances/?month=${month}`,
   transactions: "/transactions/",
   me: "/me/",
   chat: {

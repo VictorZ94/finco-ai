@@ -57,7 +57,7 @@ class FirebaseAuthenticationTests(FirebaseAuthMixin, APITestCase):
         accounts = FinancialAccount.objects.filter(user_id=ALICE)
         self.assertEqual(accounts.count(), 43)
         self.assertEqual(accounts.filter(can_receive_movement=True).count(), 19)
-        leaf = accounts.get(code="1105-05")
+        leaf = accounts.get(code="110505")
         self.assertEqual(
             [leaf.parent.code, leaf.parent.parent.code, leaf.parent.parent.parent.code],
             ["1105", "11", "1"],
@@ -84,10 +84,10 @@ class FirebaseAuthenticationTests(FirebaseAuthMixin, APITestCase):
     def test_cannot_post_to_another_users_account(self):
         self.authenticate(ALICE)
         self.client.get(reverse("me"))
-        alice_cash = FinancialAccount.objects.get(user_id=ALICE, code="1105-05")
+        alice_cash = FinancialAccount.objects.get(user_id=ALICE, code="110505")
         self.authenticate(BOB)
         self.client.get(reverse("me"))
-        bob_income = FinancialAccount.objects.get(user_id=BOB, code="4135-05")
+        bob_income = FinancialAccount.objects.get(user_id=BOB, code="413505")
 
         response = self.client.post(
             self.url,
@@ -162,7 +162,7 @@ class SeedDefaultChartTests(TestCase):
     def test_two_users_can_share_codes(self):
         seed_default_chart(ALICE)
         seed_default_chart(BOB)
-        self.assertEqual(FinancialAccount.objects.filter(code="1105-05").count(), 2)
+        self.assertEqual(FinancialAccount.objects.filter(code="110505").count(), 2)
 
 
 @override_settings(FIREBASE_ADMIN_UIDS=[ALICE])
@@ -220,8 +220,8 @@ class ReassignUserDataTests(TestCase):
         seed_default_chart("demo-user")
         accounts = FinancialAccount.objects.filter(user_id="demo-user")
         entry = Transaction.objects.create(user_id="demo-user", numbering="0001")
-        LedgerEntry.objects.create(transaction=entry, account=accounts.get(code="5125-01"), debit=10)
-        LedgerEntry.objects.create(transaction=entry, account=accounts.get(code="2105-02"), credit=10)
+        LedgerEntry.objects.create(transaction=entry, account=accounts.get(code="512501"), debit=10)
+        LedgerEntry.objects.create(transaction=entry, account=accounts.get(code="210502"), credit=10)
         Conversation.objects.create(user_id="demo-user")
 
     def reassign(self, *extra):
@@ -254,8 +254,8 @@ class ReassignUserDataTests(TestCase):
         seed_default_chart(ALICE)
         accounts = FinancialAccount.objects.filter(user_id=ALICE)
         entry = Transaction.objects.create(user_id=ALICE, numbering="0001")
-        LedgerEntry.objects.create(transaction=entry, account=accounts.get(code="5125-01"), debit=5)
-        LedgerEntry.objects.create(transaction=entry, account=accounts.get(code="2105-02"), credit=5)
+        LedgerEntry.objects.create(transaction=entry, account=accounts.get(code="512501"), debit=5)
+        LedgerEntry.objects.create(transaction=entry, account=accounts.get(code="210502"), credit=5)
 
         with self.assertRaisesMessage(CommandError, "ledger entries"):
             self.reassign("--replace")

@@ -12,7 +12,7 @@ interface AccountProposalCardProps {
   onAnswer: (accept: boolean) => void
 }
 
-/** "Create 5135-04 Taxi under 5135 Servicios?" with Create account / No; nothing is created without a tap. */
+/** "Create 513504 Taxi under 5135 Servicios?" with Create account / No; nothing is created without a tap. */
 export default function AccountProposalCard({ card, isAnswering, onAnswer }: AccountProposalCardProps) {
   const outcome = proposalOutcome(card)
   return (

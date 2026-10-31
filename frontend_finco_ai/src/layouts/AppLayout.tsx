@@ -4,6 +4,7 @@ import Box from '@mui/material/Box'
 import ButtonBase from '@mui/material/ButtonBase'
 import Toolbar from '@mui/material/Toolbar'
 import ChatIcon from '@mui/icons-material/ChatOutlined'
+import AccountTreeIcon from '@mui/icons-material/AccountTreeOutlined'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLongOutlined'
 import DashboardIcon from '@mui/icons-material/SpaceDashboardOutlined'
 import Wordmark from '../components/Wordmark.tsx'
@@ -13,6 +14,7 @@ const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: <DashboardIcon fontSize="small" /> },
   { to: '/chat', label: 'Chat', icon: <ChatIcon fontSize="small" /> },
   { to: '/ledger', label: 'Ledger', icon: <ReceiptLongIcon fontSize="small" /> },
+  { to: '/puc', label: 'PUC', icon: <AccountTreeIcon fontSize="small" /> },
 ]
 
 export default function AppLayout() {

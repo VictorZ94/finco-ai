@@ -33,10 +33,10 @@ class TransactionApiTests(FirebaseAuthMixin, APITestCase):
     def setUp(self):
         super().setUp()
         self.authenticate(USER)
-        self.expense = make_account("5125-01")
-        self.card = make_account("2105-02", nature=Nature.CREDIT)
+        self.expense = make_account("512501")
+        self.card = make_account("210502", nature=Nature.CREDIT)
         self.group = make_account("5125", postable=False)
-        self.foreign = make_account("9999-01", user_id="someone-else")
+        self.foreign = make_account("999901", user_id="someone-else")
 
     def entry(self, lines=None, **extra):
         if lines is None:
@@ -146,14 +146,14 @@ class TransactionApiTests(FirebaseAuthMixin, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["total_debit"], "50000.00")
-        self.assertEqual(response.data[0]["lines"][0]["account_code"], "5125-01")
+        self.assertEqual(response.data[0]["lines"][0]["account_code"], "512501")
 
 
 class LedgerEntryConstraintTests(TestCase):
     """The database enforces the line rules even when the API is bypassed."""
 
     def setUp(self):
-        self.account = make_account("1105-05")
+        self.account = make_account("110505")
         self.entry = Transaction.objects.create(user_id=USER, numbering="0001")
 
     def assert_db_rejects(self, debit, credit):
@@ -176,12 +176,12 @@ class AccountApiTests(FirebaseAuthMixin, APITestCase):
     def test_postable_filter_returns_only_leaf_accounts(self):
         self.authenticate(USER)
         make_account("5125", postable=False)
-        make_account("5125-01")
-        make_account("5125-02", user_id="someone-else")
+        make_account("512501")
+        make_account("512502", user_id="someone-else")
 
         url = reverse("account-list")
         all_codes = [a["code"] for a in self.client.get(url).data]
         postable_codes = [a["code"] for a in self.client.get(url, {"postable": "true"}).data]
 
-        self.assertEqual(all_codes, ["5125", "5125-01"])
-        self.assertEqual(postable_codes, ["5125-01"])
+        self.assertEqual(all_codes, ["5125", "512501"])
+        self.assertEqual(postable_codes, ["512501"])

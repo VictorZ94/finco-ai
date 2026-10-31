@@ -61,7 +61,7 @@ So the tools read a snapshot loaded in the request thread, and only stage what t
 - **No double save in one turn**, and idempotent requests: the frontend sends a `client_id`, and a repeated POST replays the first answer.
 - **New accounts need a tap:**
   - `propose_new_account` stages a proposal, which is saved to `Conversation.pending_account` and shown as a card.
-  - `POST …/account-proposal/ {accept}` creates the account (`create_child_account`, next `<parent>-NN` code, level 4, type and nature from the parent).
+  - `POST …/account-proposal/ {accept}` creates the account (`create_child_account`, next `<parent>NN` code (6 digits since step 10), level 4, type and nature from the parent).
   - It then runs a turn with the tap as text. That text is not stored as a `Message`, so it's never evidence.
 
 ### Memory

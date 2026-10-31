@@ -125,6 +125,8 @@ def check_proposal(ctx: ChatContext, *, parent_code, name, role):
     existing = ctx.children[group.code].get(name.lower())
     if existing:
         return f"Not proposed: {existing} {name} already exists. Use that account."
+    if ctx.next_codes[group.code] is None:
+        return f"Not proposed: {group.code} {group.name} is full (99 sub-accounts). Use one of its existing accounts."
     return {
         "parent_code": group.code,
         "parent_name": group.name,

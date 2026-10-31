@@ -4,13 +4,20 @@ from django.db import transaction
 
 from .models import FinancialAccount
 
-_SUFFIX = re.compile(r"-(\d+)$")
+MAX_SUFFIX = 99
 
 
 def child_code(parent_code, sibling_codes):
-    """Next free sub-account code: "5135" with 5135-01..03 taken -> "5135-04"."""
-    suffixes = [int(match.group(1)) for code in sibling_codes if (match := _SUFFIX.search(code))]
-    return f"{parent_code}-{max(suffixes, default=0) + 1:02d}"
+    """Next free PUC sub-account code: "5135" with 513501..03 taken -> "513504".
+
+    Raises ValueError once the parent's 99 two-digit slots are used up.
+    """
+    pattern = re.compile(rf"^{re.escape(parent_code)}(\d{{2}})$")
+    suffixes = [int(match.group(1)) for code in sibling_codes if (match := pattern.match(code))]
+    suffix = max(suffixes, default=0) + 1
+    if suffix > MAX_SUFFIX:
+        raise ValueError(f"{parent_code} has no free sub-account codes left.")
+    return f"{parent_code}{suffix:02d}"
 
 
 def next_child_code(parent):
