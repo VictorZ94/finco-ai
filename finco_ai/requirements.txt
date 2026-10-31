@@ -3,6 +3,13 @@ django-environ==0.14.0
 Django==6.1.2
 djangorestframework==3.18.3
 firebase-admin==7.7.0
+httpx==0.28.1
+langchain-core==1.7.0
+langchain-ollama==1.1.0
+langchain==1.4.7
+langgraph-checkpoint-postgres==3.2.0
+langgraph==1.2.18
+ollama==0.6.3
 psycopg[binary]==3.3.6
 sqlparse==0.6.0
 typing_extensions==4.16.0

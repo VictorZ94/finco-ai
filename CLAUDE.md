@@ -59,7 +59,11 @@ Frontend unit tests use Vitest (pure logic only, no component tests yet). Check 
   - `money.ts`: integer cents. Use `toCents` for user input and `apiToCents` for signed API strings; `formatCents`, `formatApiAmount` and `formatCompact` format them.
   - `dates.ts`: local-time dates.
   - `apiClient.ts`, `queryClient.ts` and `firebase.ts`.
-- **Chat (`/chat`)**: `useChat` keeps the messages in local state and sends through a `useMutation`. `chatService.sendMessage()` is currently a **mock** (a delay plus an echo). When the `ai_chat` API exists, replace it with a `hooks/chat/` mutation and an `endpoints.chat` entry. Messages are not persisted.
+- **Chat (`/chat`)**: the agent that records entries from plain words (`docs/09-chat-agent.md`). `hooks/chat/useChat.ts` has `useConversations`, `useMessages`, `useCreateConversation`, `useSendMessage` and `useAnswerProposal` (`chatKeys`).
+  - `ChatPage` follows the latest conversation and has a "New conversation" button.
+  - **Sending:** each message gets a `crypto.randomUUID()` `clientId`. It is the optimistic message's id and the server's idempotency key, so a retried POST never records twice. It also sends `today` (local date).
+  - **Cards:** assistant messages may carry `data` cards rendered in `MessageBubble`: `RecordedEntryCard` (the saved entry) and `AccountProposalCard` (Create account / No).
+  - **Refreshes:** a turn that saved an entry invalidates `ledgerKeys.transactions` and `dashboardKeys.all`; accepting a proposal invalidates the postable accounts.
 - **Ledger (`/ledger`)**: a manual journal-entry form plus the list of saved entries. `LedgerPage` loads accounts and entries with `useAccounts()`/`useTransactions()`; `EntryForm` is self-contained (`useEntryForm()` + `useCreateTransaction()`).
   - `entrySchema.ts` holds the rules (debit XOR credit per line, at least 2 lines, balanced totals) in one `superRefine` (zod skips an object's refinements once a field fails), and its `.transform` outputs the API payload, so `handleSubmit` receives a `NewTransaction`. The hint next to Save is `firstProblem(values)`.
   - `useFieldArray` provides the line keys. The debit/credit lock disables the TextField, not the `Controller`, so the value stays registered.
@@ -96,7 +100,7 @@ Settings are split up in `finco_ai/finco_ai/settings/`:
 - Switch environments with `DJANGO_SETTINGS_MODULE=finco_ai.settings.prod`. Check production settings with `manage.py check --deploy`.
 - Never hardcode secrets: add new ones to `.env.example` and read them with `env(...)`.
 
-Each domain is its own Django app: `users`, `financial_accounts`, `transactions`, `ai_chat`, `dashboard`. All are in `INSTALLED_APPS`. `ai_chat` has no views yet.
+Each domain is its own Django app: `users`, `financial_accounts`, `transactions`, `ai_chat`, `dashboard`. All are in `INSTALLED_APPS`.
 
 API (Django REST Framework, `REST_FRAMEWORK` in `base.py`):
 - Each app has a `urls.py`, included under `api/` in `finco_ai/urls.py`.
@@ -105,6 +109,7 @@ API (Django REST Framework, `REST_FRAMEWORK` in `base.py`):
   - `GET/POST /api/transactions/` (`transactions.views`)
   - `GET /api/dashboard/summary/?month=YYYY-MM` (`dashboard.views`; the figures come from `dashboard/services.build_summary`)
   - `GET/PATCH /api/me/` (`users.views`): PATCH only changes `accent_color`; identity fields are read-only
+  - `GET/POST /api/chat/conversations/`, `GET/POST /api/chat/conversations/<id>/messages/` (`{content, today, client_id}` → `{messages, transaction}`, 503 when the LLM is down), `POST /api/chat/conversations/<id>/account-proposal/` (`{accept}`) (`ai_chat.views`)
 - **Auth is Firebase only** (`users` app):
   - `users.authentication.FirebaseAuthentication` + `IsAuthenticated` are the DRF defaults. Every request needs `Authorization: Bearer <Firebase ID token>`; otherwise it gets a 401.
   - The auth class verifies the token through `users.firebase.verify_id_token`, the only call into Firebase, and creates or refreshes a `users.AppUser` (`app_users` table, **no password**). On first sign-in it seeds the user's chart with `financial_accounts.provisioning.seed_default_chart`.
@@ -129,7 +134,7 @@ How the models relate:
   - `created_at`: the system "current date", never editable.
   - `supplier` (free text) and `description`, both optional.
 
-  Each `Transaction` has many `LedgerEntry` rows, each with `debit`/`credit` Decimals (18,2) against a `FinancialAccount` (`on_delete=PROTECT`). `Transaction.message_id` is a placeholder UUID that is meant to become a ForeignKey to a chat `Message` model, which doesn't exist yet.
+  Each `Transaction` has many `LedgerEntry` rows, each with `debit`/`credit` Decimals (18,2) against a `FinancialAccount` (`on_delete=PROTECT`). `Transaction.message` (FK to `ai_chat.Message`, `SET_NULL`, column `message_id`) links an entry to the chat message that recorded it; it is null for entries made in `/ledger`.
 - **Ledger rules**, enforced in `transactions/serializers.py` and backed by DB `CheckConstraint`s:
   - a line has a debit XOR a credit, and amounts are ≥ 0;
   - an entry has at least 2 lines, and Σ debit = Σ credit;
@@ -141,4 +146,33 @@ How the models relate:
   - **Assets**, **liabilities** and **net worth** are balances as of the month's last day.
   - Use ORM aggregation (`Sum(Case(When…))`, `TruncMonth`), never Python loops over entries.
 - `TIME_ZONE` is `UTC`, so the server-side default for `applied_date` is the UTC date. The frontend always sends the local date.
-- `ai_chat` has `Conversation` (owned by `user_id`) and `ConversationMemory` (a one-to-one rolling `summary` used as LLM context).
+- `ai_chat` has `Conversation` (owned by `user_id`; `title`, `pending_account`), `Message` (`role`, `content`, `data` card, `client_id` unique per conversation) and `ConversationMemory` (unused yet).
+
+Chat agent (`ai_chat`, details in `docs/09-chat-agent.md`): **LangChain v1 `create_agent` + tools, with LangGraph memory.**
+- **One turn** (`agent.run_turn`):
+  - `load_context` snapshots the user's postable accounts, level-3 groups, next sub-account codes and everything the user wrote (`context.ChatContext`).
+  - The agent is invoked with the message, `thread_id = conversation id` and `context=ChatContext`.
+  - `@dynamic_prompt` adds `SYSTEM_PROMPT` plus `build_context` (`prompts.py`).
+  - The final AI text becomes the assistant `Message`.
+- **Tools never touch the ORM.** LangGraph runs them in worker threads, which would get other DB connections.
+  - `record_movement` and `propose_new_account` (`tools.py`) run the rules in `rules.py` against the snapshot and only *stage* results in `ctx.effects`.
+  - `agent._persist` then writes everything in the request thread, in one transaction: the entry through `TransactionSerializer` (balance, ownership, numbering, linked to the message), or `Conversation.pending_account` plus the proposal card.
+- **The model never writes ledger lines.** It gives a `kind`, an amount, `category_code`/`payment_code` and the user's own words for each.
+- **`rules.check_movement` refuses with an instruction** ("Not saved: the user never said how they paid… ask them; options: …") when:
+  - an account is unknown;
+  - the types don't fit the kind (`movements.KINDS`);
+  - the amount is bad;
+  - the evidence isn't in what the user wrote (`evidence_in`, which is how "never assume the payment method" is enforced);
+  - one entry was already saved this turn.
+
+  The model then asks the user.
+- **New accounts need a tap:** `answer_proposal` creates the account (`create_child_account`, or `child_code` for the next `<parent>-NN`). It then runs a turn with the tap as text ("(I tapped Create account…)"). That text isn't stored as a `Message`, so it never counts as evidence.
+- **Memory:** `memory.open_checkpointer()` is a `PostgresSaver` on its own autocommit psycopg connection to Django's DB (tests use the test DB). Its tables are created by migration `ai_chat/0003` (`setup()`).
+  - `SummarizationMiddleware` (with `SUMMARY_PROMPT`) replaces old history with a summary once it passes `CHAT_SUMMARY_TRIGGER_TOKENS` (4000), keeping the last `CHAT_SUMMARY_KEEP_MESSAGES` (20).
+  - The summary (marked `lc_source="summarization"`) is mirrored into `ConversationMemory`.
+  - `Message` rows are the UI transcript; the checkpointer is the model's memory.
+  - `memory.delete_thread(conversation_id)` forgets a conversation.
+- **LLM:** `llm.get_chat_model()` returns `ChatOllama` (temperature 0), configured by `OLLAMA_HOST`/`OLLAMA_API_KEY`/`OLLAMA_MODEL`/`OLLAMA_TIMEOUT` (default Ollama cloud, `gemma4:31b`; messages and account names leave the server).
+  - Any LangChain chat model with tool calling can replace it.
+  - `LLM_ERRORS` → `LLMUnavailable` → 503. A `GraphRecursionError` (`RECURSION_LIMIT` 12) saves nothing and asks the user to rephrase.
+- **Tests** (`ai_chat/tests.py`) patch `ai_chat.agent.get_chat_model` with `FakeToolModel`, which replays scripted `AIMessage`s (text or `tool_calls`) and records what it was sent. They need no network or key, and they use the real Postgres checkpointer in the test DB. `RuleTests` covers `rules.py` directly. When you change the rules, update the prompt **and** `rules.py`.

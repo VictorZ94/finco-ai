@@ -170,3 +170,14 @@ LOGIN_URL = 'admin:login'
 
 # Admin sessions expire after 8 hours.
 SESSION_COOKIE_AGE = 8 * 60 * 60
+
+# Chat agent LLM (ai_chat.llm). Ollama cloud by default: messages and the user's
+# account names are sent to OLLAMA_HOST. Point it at http://127.0.0.1:11434 for a local model.
+OLLAMA_HOST = env('OLLAMA_HOST', default='https://ollama.com')
+OLLAMA_API_KEY = env('OLLAMA_API_KEY', default='')
+OLLAMA_MODEL = env('OLLAMA_MODEL', default='gemma4:31b')
+OLLAMA_TIMEOUT = env.float('OLLAMA_TIMEOUT', default=60.0)
+# Chat memory: when a conversation's history passes this many tokens, older messages are replaced by a
+# summary and the most recent CHAT_SUMMARY_KEEP_MESSAGES are kept as they are (ai_chat.agent).
+CHAT_SUMMARY_TRIGGER_TOKENS = env.int('CHAT_SUMMARY_TRIGGER_TOKENS', default=4000)
+CHAT_SUMMARY_KEEP_MESSAGES = env.int('CHAT_SUMMARY_KEEP_MESSAGES', default=20)

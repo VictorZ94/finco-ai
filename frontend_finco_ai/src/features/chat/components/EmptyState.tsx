@@ -7,10 +7,11 @@ import { concentricRings } from '../../../theme/patterns.ts'
 import { radius } from '../../../theme/tokens.ts'
 import { useBrand } from '../../../theme/useBrand.ts'
 
+// Each is complete enough to record (amount, category and how it was paid) or shows a follow-up question.
 const EXAMPLES = [
-  'I paid 50,000 for lunch',
-  'I received my salary of 3,000,000',
-  'I bought a laptop with my credit card',
+  'I paid 80,000 for petrol with my Nubank card',
+  'I received my salary of 3,000,000 in Bancolombia',
+  'I took a taxi for 25,000',
 ]
 
 interface EmptyStateProps {
@@ -39,7 +40,7 @@ export default function EmptyState({ onPickExample }: EmptyStateProps) {
           What moved today?
         </Typography>
         <Typography sx={{ color: 'brand.900', maxWidth: '46ch', mb: 3.5 }}>
-          Describe a movement in plain words and FincoAI turns it into a ledger entry.
+          Describe a movement in plain words. FincoAI asks for anything missing, then saves it as a ledger entry.
         </Typography>
         <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
           {EXAMPLES.map((example) => (

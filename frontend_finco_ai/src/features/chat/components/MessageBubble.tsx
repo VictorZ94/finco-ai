@@ -3,16 +3,20 @@ import Typography from '@mui/material/Typography'
 import BrandMark from '../../../components/BrandMark.tsx'
 import { radius } from '../../../theme/tokens.ts'
 import type { ChatMessage } from '../types.ts'
+import AccountProposalCard from './AccountProposalCard.tsx'
+import RecordedEntryCard from './RecordedEntryCard.tsx'
 
 interface MessageBubbleProps {
   message: ChatMessage
+  isAnswering: boolean
+  onAnswerProposal: (accept: boolean) => void
 }
 
 const timeFormat = new Intl.DateTimeFormat([], { hour: '2-digit', minute: '2-digit' })
 
 /** User messages: brand-600 bubbles on the right. Assistant replies: white cards with the mark. */
-export default function MessageBubble({ message }: MessageBubbleProps) {
-  const time = timeFormat.format(message.createdAt)
+export default function MessageBubble({ message, isAnswering, onAnswerProposal }: MessageBubbleProps) {
+  const time = timeFormat.format(new Date(message.created_at))
   const isUser = message.role === 'user'
 
   return (
@@ -49,6 +53,10 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'inherit' }}>
           {message.content}
         </Typography>
+        {message.data?.type === 'recorded' && <RecordedEntryCard card={message.data} />}
+        {message.data?.type === 'account_proposal' && (
+          <AccountProposalCard card={message.data} isAnswering={isAnswering} onAnswer={onAnswerProposal} />
+        )}
         <Typography
           variant="caption"
           sx={{ display: 'block', mt: 0.5, textAlign: isUser ? 'right' : 'left', color: isUser ? 'brand.100' : 'brand.500' }}

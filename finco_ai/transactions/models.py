@@ -21,8 +21,15 @@ class Transaction(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     user_id = models.CharField(max_length=128, db_index=True)  # Firebase UID
-    # TODO: swap for a ForeignKey(on_delete=CASCADE) once the Message model exists
-    message_id = models.UUIDField(null=True, blank=True, db_index=True)
+    # The chat message that recorded this entry (null for entries made in /ledger).
+    message = models.ForeignKey(
+        "ai_chat.Message",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="transactions",
+        db_column="message_id",
+    )
 
     class Meta:
         db_table = "transactions"

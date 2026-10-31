@@ -2,7 +2,7 @@
 
 AI-assisted personal bookkeeping in Colombian pesos. You describe your income and expenses, and FincoAI records them as **double-entry accounting entries** against a PUC-style chart of accounts (Clase → Grupo → Cuenta → Subcuenta).
 
-> **Status:** work in progress. Manual ledger entries, the dashboard and authentication work today. The chat assistant is still a placeholder, and the AI model is not connected yet.
+> **Status:** work in progress. Manual ledger entries, the dashboard, authentication and the chat agent work today.
 
 ## Features
 
@@ -22,13 +22,18 @@ AI-assisted personal bookkeeping in Colombian pesos. You describe your income an
   - a professional, monochrome light theme;
   - each user can pick the app color (8 presets or a custom color);
   - the scale is generated automatically, with WCAG contrast guaranteed.
-- **Chat:** the interface where you'll describe movements in plain words. For now it gives a placeholder reply.
+- **Chat agent:** describe a movement in plain words ("I paid 80,000 for petrol with my Nubank card") and it is saved as a balanced entry.
+  - It asks when the amount, the category or the payment method is missing. It never assumes how you paid.
+  - It uses your existing accounts, and proposes a new one only when nothing fits; a new account is created only when you tap **Create account**.
+  - It is built with LangChain on an LLM (Ollama cloud, Gemma 4 by default). The model only picks the accounts, through tools; the tools check every rule, and the server builds the balanced lines itself.
+  - **Memory:** it remembers each conversation ("same as the first one, but 30,000"), and long chats are summarized automatically. Conversations are saved, and each entry links back to the message that created it.
 
 ## Tech stack
 
 | Area | Technology |
 |---|---|
 | Backend | Python 3.12, Django 6.1, Django REST Framework, PostgreSQL 18 (Docker), Firebase Admin SDK |
+| Chat agent | LangChain v1 (`create_agent` + tools), LangGraph Postgres checkpointer for memory, Ollama cloud (Gemma 4) via `langchain-ollama` |
 | Frontend | React 19, TypeScript, Vite 8, MUI v9, MUI X Charts, React Router v8, axios, TanStack Query, react-hook-form + zod, Firebase JS SDK, Geist font |
 | Tests | Django test runner (backend), Vitest (frontend logic) |
 
@@ -41,7 +46,7 @@ finco_ai/              Django backend (manage.py, apps, docker-compose.yaml)
   financial_accounts/  chart of accounts + default chart provisioning
   transactions/        journal entries and ledger lines
   dashboard/           summary figures API
-  ai_chat/             conversation models (AI not connected yet)
+  ai_chat/             chat agent: conversations, LLM client, rules that record entries
 frontend_finco_ai/     React app (src/features/<feature>, src/theme, src/lib)
 docs/                  one document per completed build step
 ```
@@ -69,7 +74,8 @@ Fill in `finco_ai/.env`:
 - the `POSTGRES_*` values (use `POSTGRES_HOST=127.0.0.1`, because `localhost` hangs on Windows with Docker);
 - the Firebase service-account values `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL` and `FIREBASE_PRIVATE_KEY`;
 - the web config `FIREBASE_WEB_API_KEY`, `FIREBASE_AUTH_DOMAIN` and `FIREBASE_APP_ID`;
-- `FIREBASE_ADMIN_UIDS` (who can open `/admin/`).
+- `FIREBASE_ADMIN_UIDS` (who can open `/admin/`);
+- `OLLAMA_API_KEY` for the chat agent (create one at https://ollama.com/settings/keys). `OLLAMA_MODEL` defaults to `gemma4:31b`; set `OLLAMA_HOST=http://127.0.0.1:11434` to use a local model instead. Note that chat messages and account names are sent to `OLLAMA_HOST`.
 
 ### 2. Frontend
 
@@ -103,6 +109,9 @@ All endpoints require `Authorization: Bearer <Firebase ID token>`.
 | GET | `/api/accounts/?postable=true` | Chart of accounts (leaf accounts only with `postable`) |
 | GET / POST | `/api/transactions/` | List / create balanced journal entries |
 | GET | `/api/dashboard/summary/?month=YYYY-MM` | Monthly figures and a 6-month trend |
+| GET / POST | `/api/chat/conversations/` | List / start chat conversations |
+| GET / POST | `/api/chat/conversations/<id>/messages/` | History / send a message (the agent replies, and may save an entry) |
+| POST | `/api/chat/conversations/<id>/account-proposal/` | Accept or decline a proposed new account |
 
 ## Roadmap
 
@@ -115,4 +124,5 @@ The project is built one step at a time; each finished step is documented in [`d
 5. Visual design and user-selectable color
 6. Dashboard
 7. Frontend refactor: axios, TanStack Query, react-hook-form + zod
-8. *Next:* connect the AI model to the chat, so it turns plain-language messages into ledger entries
+8. Hooks data layer
+9. Chat agent: plain-language messages become ledger entries
